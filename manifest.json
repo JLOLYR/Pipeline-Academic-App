@@ -1,0 +1,26 @@
+{
+  "name": "Pipeline Académico",
+  "short_name": "Pipeline",
+  "description": "Gestión de publicaciones científicas, proyectos y congresos",
+  "start_url": "./pipeline-academico.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5efe1",
+  "theme_color": "#b85c2e",
+  "lang": "es-CL",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
