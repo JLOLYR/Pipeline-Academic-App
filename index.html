@@ -307,6 +307,20 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 .install-banner .ib-close { background: transparent; color: var(--paper); opacity: 0.6; padding: 4px 8px; font-size: 16px; }
 .install-banner .ib-close:hover { opacity: 1; background: rgba(255,255,255,.1); }
 
+/* Storage health banner */
+.storage-banner { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; }
+.storage-banner.critical { border-left-color: var(--accent-deep); background: rgba(141,63,26,.04); }
+.storage-banner.ok { border-left-color: var(--sage); }
+.storage-banner .sb-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--paper); font-size: 14px; }
+.storage-banner.critical .sb-icon { background: var(--accent-deep); }
+.storage-banner.warning .sb-icon { background: var(--gold); }
+.storage-banner.ok .sb-icon { background: var(--sage); }
+.storage-banner .sb-content { flex: 1; }
+.storage-banner .sb-title { font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 2px; }
+.storage-banner .sb-meta { font-size: 12px; color: var(--ink-muted); font-family: 'Fraunces', serif; font-style: italic; }
+.storage-banner button { background: var(--ink); color: var(--paper); border: none; padding: 8px 14px; border-radius: 4px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.storage-banner button:hover { background: var(--accent-deep); }
+
 /* DOI lookup inside modal */
 .doi-lookup-row { display: flex; gap: 8px; align-items: flex-end; }
 .doi-lookup-row > .form-group { flex: 1; margin-bottom: 0; }
@@ -366,6 +380,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 
 <main>
   <section class="view active" id="view-dashboard">
+    <div id="storageBannerContainer"></div>
     <div class="section-title">Resumen general</div>
     <div class="stats-grid" id="statsGrid"></div>
 
@@ -984,23 +999,155 @@ let selectedYear = new Date().getFullYear();
 let monthlyEntityFilter = 'all'; // 'all' | 'articles' | 'projects' | 'conferences'
 let charts = {};
 
+/* =====================================================
+   STORAGE LAYER — wrapper que funciona en cualquier navegador
+   Prioriza localStorage (estándar, persistente entre sesiones).
+   Cae a window.storage si está disponible (entorno Claude).
+   ===================================================== */
+const storage = {
+  async get(key) {
+    // Prioridad 1: localStorage (estándar de navegadores)
+    try {
+      const val = localStorage.getItem(key);
+      if (val !== null) return { key, value: val };
+    } catch (e) { console.warn('localStorage read failed:', e); }
+
+    // Prioridad 2: window.storage del entorno (si existe)
+    if (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function') {
+      try {
+        const r = await window.storage.get(key);
+        if (r && r.value) {
+          // Migrar de window.storage a localStorage para próximas cargas
+          try { localStorage.setItem(key, r.value); } catch (e) {}
+          return r;
+        }
+      } catch (e) { console.warn('window.storage read failed:', e); }
+    }
+    return null;
+  },
+
+  async set(key, value) {
+    let success = false;
+    // Siempre intentar guardar en localStorage primero (es lo persistente real)
+    try {
+      localStorage.setItem(key, value);
+      success = true;
+    } catch (e) {
+      console.error('localStorage write failed:', e);
+      // QuotaExceededError es la causa típica
+      if (e.name === 'QuotaExceededError') {
+        showToast('Espacio del navegador agotado. Exporta y elimina datos antiguos.', true);
+        throw e;
+      }
+    }
+    // También sincronizar con window.storage si está disponible (entorno Claude)
+    if (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.set === 'function') {
+      try { await window.storage.set(key, value); } catch (e) { /* fallback ok */ }
+    }
+    if (!success) throw new Error('No se pudo guardar en localStorage');
+    return { key, value };
+  }
+};
+
+/* Diagnóstico inicial: verifica que el almacenamiento funciona */
+function checkStorageHealth() {
+  try {
+    const testKey = '__pipeline_test__';
+    localStorage.setItem(testKey, '1');
+    if (localStorage.getItem(testKey) !== '1') throw new Error('write/read mismatch');
+    localStorage.removeItem(testKey);
+    return { ok: true, backend: 'localStorage' };
+  } catch (e) {
+    return { ok: false, backend: 'none', error: e.message };
+  }
+}
+
+/* Tracker de último respaldo manual al JSON */
+const STORAGE_LAST_BACKUP = 'pipeline_last_backup';
+function markBackupDone() {
+  try { localStorage.setItem(STORAGE_LAST_BACKUP, new Date().toISOString()); } catch (e) {}
+}
+function getLastBackup() {
+  try { return localStorage.getItem(STORAGE_LAST_BACKUP); } catch (e) { return null; }
+}
+function daysSinceBackup() {
+  const last = getLastBackup();
+  if (!last) return Infinity;
+  return Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+}
+
+function renderStorageBanner() {
+  const wrap = document.getElementById('storageBannerContainer');
+  if (!wrap) return;
+  const health = checkStorageHealth();
+  const totalItems = articles.length + projects.length + conferences.length;
+
+  // Caso 1: localStorage no funciona → CRÍTICO
+  if (!health.ok) {
+    wrap.innerHTML = `<div class="storage-banner critical">
+      <div class="sb-icon">!</div>
+      <div class="sb-content">
+        <div class="sb-title">El almacenamiento del navegador no está disponible</div>
+        <div class="sb-meta">Tus datos NO se están guardando. Posible causa: modo incógnito o cookies bloqueadas. Exporta a JSON cada vez que hagas cambios.</div>
+      </div>
+      <button id="sbExport">Exportar ya</button>
+    </div>`;
+    document.getElementById('sbExport').addEventListener('click', exportAll);
+    return;
+  }
+
+  // No hay datos → no mostrar nada
+  if (totalItems === 0) { wrap.innerHTML = ''; return; }
+
+  const days = daysSinceBackup();
+  // Caso 2: nunca ha respaldado o >30 días
+  if (days === Infinity) {
+    wrap.innerHTML = `<div class="storage-banner warning">
+      <div class="sb-icon">↓</div>
+      <div class="sb-content">
+        <div class="sb-title">Recuerda hacer respaldo a JSON</div>
+        <div class="sb-meta">Tus datos viven solo en este navegador. Exporta una copia para protegerte de pérdidas accidentales (limpiar cookies, cambiar de equipo).</div>
+      </div>
+      <button id="sbExport">Exportar JSON</button>
+    </div>`;
+    document.getElementById('sbExport').addEventListener('click', exportAll);
+    return;
+  }
+  if (days > 30) {
+    wrap.innerHTML = `<div class="storage-banner warning">
+      <div class="sb-icon">↓</div>
+      <div class="sb-content">
+        <div class="sb-title">Han pasado ${days} días desde tu último respaldo</div>
+        <div class="sb-meta">Conviene exportar una copia actualizada del JSON para no perder cambios recientes.</div>
+      </div>
+      <button id="sbExport">Exportar JSON</button>
+    </div>`;
+    document.getElementById('sbExport').addEventListener('click', exportAll);
+    return;
+  }
+
+  // Todo OK → no mostrar nada (no llenar de banners verdes innecesarios)
+  wrap.innerHTML = '';
+}
+
 async function loadAll() { await loadArticles(); await loadProjects(); await loadConferences(); await loadGoals(); }
+
 
 async function loadGoals() {
   try {
-    const r = await window.storage.get(STORAGE_GOALS);
+    const r = await storage.get(STORAGE_GOALS);
     if (r && r.value) goals = JSON.parse(r.value);
   } catch (e) { goals = {}; }
 }
 
 async function saveGoals() {
-  try { await window.storage.set(STORAGE_GOALS, JSON.stringify(goals)); }
-  catch (e) { showToast('Error guardando metas', true); }
+  try { await storage.set(STORAGE_GOALS, JSON.stringify(goals)); }
+  catch (e) { showToast('Error guardando metas — exporta tu JSON ya', true); }
 }
 
 async function loadArticles() {
   try {
-    const r = await window.storage.get(STORAGE_ARTICLES);
+    const r = await storage.get(STORAGE_ARTICLES);
     if (r && r.value) {
       articles = JSON.parse(r.value);
     } else {
@@ -1024,12 +1171,12 @@ async function loadArticles() {
       if (!a.citationsByYear) { a.citationsByYear = {}; migrated = true; }
     });
     if (migrated) await saveArticles();
-  } catch (e) { articles = []; }
+  } catch (e) { console.error('loadArticles failed:', e); articles = []; }
 }
 
 async function loadProjects() {
   try {
-    const r = await window.storage.get(STORAGE_PROJECTS);
+    const r = await storage.get(STORAGE_PROJECTS);
     if (r && r.value) {
       projects = JSON.parse(r.value);
       let migrated = false;
@@ -1039,12 +1186,12 @@ async function loadProjects() {
       });
       if (migrated) await saveProjects();
     }
-  } catch (e) { projects = []; }
+  } catch (e) { console.error('loadProjects failed:', e); projects = []; }
 }
 
 async function loadConferences() {
   try {
-    const r = await window.storage.get(STORAGE_CONFERENCES);
+    const r = await storage.get(STORAGE_CONFERENCES);
     if (r && r.value) {
       conferences = JSON.parse(r.value);
       let migrated = false;
@@ -1054,20 +1201,20 @@ async function loadConferences() {
       });
       if (migrated) await saveConferences();
     }
-  } catch (e) { conferences = []; }
+  } catch (e) { console.error('loadConferences failed:', e); conferences = []; }
 }
 
 async function saveArticles() {
-  try { await window.storage.set(STORAGE_ARTICLES, JSON.stringify(articles)); }
-  catch (e) { showToast('Error guardando artículos', true); }
+  try { await storage.set(STORAGE_ARTICLES, JSON.stringify(articles)); }
+  catch (e) { showToast('Error guardando artículos — exporta tu JSON ya', true); }
 }
 async function saveProjects() {
-  try { await window.storage.set(STORAGE_PROJECTS, JSON.stringify(projects)); }
-  catch (e) { showToast('Error guardando proyectos', true); }
+  try { await storage.set(STORAGE_PROJECTS, JSON.stringify(projects)); }
+  catch (e) { showToast('Error guardando proyectos — exporta tu JSON ya', true); }
 }
 async function saveConferences() {
-  try { await window.storage.set(STORAGE_CONFERENCES, JSON.stringify(conferences)); }
-  catch (e) { showToast('Error guardando congresos', true); }
+  try { await storage.set(STORAGE_CONFERENCES, JSON.stringify(conferences)); }
+  catch (e) { showToast('Error guardando congresos — exporta tu JSON ya', true); }
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -1613,6 +1760,7 @@ function getMetrics() {
 
 function render() {
   updateTabCounts();
+  renderStorageBanner();
   renderDashboardCards();
   renderAlerts();
   renderGoalsWidget();
@@ -2304,7 +2452,8 @@ function exportAll() {
   a.download = `pipeline-academico-${todayISO()}.json`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast(`Exportados ${totalCount} registros`);
+  markBackupDone();
+  showToast(`Exportados ${totalCount} registros · copia respaldada`);
 }
 
 async function importFile(e) {
