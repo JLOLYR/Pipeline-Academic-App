@@ -382,6 +382,17 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
   .welcome-body { padding: 20px 20px; }
   .welcome-footer-row { padding: 14px 20px; }
 }
+
+/* Phase KPI strip */
+.phases-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.phases-kpi-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 18px; position: relative; }
+.phases-kpi-card::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--kpi-color, var(--ink-muted)); }
+.phases-kpi-card .pk-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); font-weight: 600; }
+.phases-kpi-card .pk-value { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; line-height: 1.1; margin-top: 4px; color: var(--kpi-color, var(--ink)); letter-spacing: -0.01em; }
+.phases-kpi-card .pk-value small { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: var(--ink-muted); margin-left: 4px; letter-spacing: 0; }
+.phases-kpi-card .pk-meta { font-size: 11px; color: var(--ink-muted); margin-top: 3px; font-style: italic; font-family: 'Fraunces', serif; }
+.phases-kpi-section-title { font-family: 'Fraunces', serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); font-weight: 600; margin: 18px 0 10px; display: flex; align-items: center; gap: 12px; }
+.phases-kpi-section-title::before { content: ''; width: 24px; height: 1px; background: var(--ink-muted); }
 </style>
 </head>
 <body>
@@ -542,10 +553,11 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
     </div>
 
     <div class="section-title" style="margin-top:32px">Tiempo en cada fase</div>
+    <div id="phasesKpiStrip"></div>
     <div class="chart-card full-width" style="margin-bottom:20px">
-      <h3>Duración por fase de cada artículo</h3>
-      <div class="chart-sub">Días invertidos en Planeación, Revisión y Publicación · ordenado por más reciente</div>
-      <div class="chart-wrap" id="chartPhasesWrap" style="height:auto;min-height:200px"><canvas id="chartPhases"></canvas><div class="chart-empty">Sin datos suficientes para calcular fases.<span>Necesitas artículos con al menos un cambio de etapa registrado.</span></div></div>
+      <h3>Tiempo invertido en artículos en curso</h3>
+      <div class="chart-sub">Días en cada fase para artículos NO publicados · ordenado por más reciente</div>
+      <div class="chart-wrap" id="chartPhasesWrap" style="height:auto;min-height:200px"><canvas id="chartPhases"></canvas><div class="chart-empty">No hay artículos en curso.<span>Todos tus artículos están publicados o sin historial de etapas.</span></div></div>
       <div style="margin-top:14px;font-size:11px;color:var(--ink-muted);font-style:italic;font-family:'Fraunces',serif;text-align:center">
         <span style="display:inline-block;width:10px;height:10px;background:#5d7b9c;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Planeación (idea → enviado)
         <span style="display:inline-block;width:10px;height:10px;background:#b8902b;border-radius:2px;vertical-align:middle;margin:0 4px 0 14px"></span>Revisión (enviado → aceptado)
@@ -2890,11 +2902,7 @@ async function handleSaveGoals() {
 }
 
 function renderPhasesChart() {
-  // Calcular para cada artículo los días en cada fase usando stageHistory.
-  // Fases:
-  //   PLANEACIÓN: desde la primera fecha registrada hasta 'enviado' (o hoy si no se ha enviado).
-  //   REVISIÓN: desde 'enviado' hasta 'aceptado' (o hoy si sigue en revisión).
-  //   PUBLICACIÓN: desde 'aceptado' hasta 'publicado' (o hoy si aceptado sin publicar).
+  // Helpers
   const today = new Date();
   today.setHours(0,0,0,0);
 
@@ -2911,35 +2919,115 @@ function renderPhasesChart() {
     if (!a || !b) return 0;
     return Math.max(0, Math.round((b - a) / 86400000));
   }
+  function avg(arr) {
+    if (arr.length === 0) return null;
+    return Math.round(arr.reduce((s,v) => s+v, 0) / arr.length);
+  }
+  function median(arr) {
+    if (arr.length === 0) return null;
+    const sorted = [...arr].sort((a,b) => a-b);
+    const m = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? Math.round((sorted[m-1] + sorted[m]) / 2) : sorted[m];
+  }
 
-  const data = articles.map(a => {
+  // ========================================
+  // PARTE 1: KPIs sobre TODO el portafolio histórico
+  // Mide el tiempo real que tardó cada fase usando solo los artículos
+  // que efectivamente transitaron esa fase (no especulamos sobre futuro).
+  // ========================================
+  const planningDurations = []; // days from first stage to 'enviado' (only papers that were submitted)
+  const reviewDurations = [];   // days from 'enviado' to 'aceptado' (only papers that were accepted)
+  const acceptToPubDurations = []; // days from 'aceptado' to 'publicado'
+  const totalCycleDurations = [];  // days from first to 'publicado' (only published)
+
+  articles.forEach(a => {
     const start = firstDateAny(a);
     const enviado = firstStageDate(a, 'enviado');
     const aceptado = firstStageDate(a, 'aceptado');
     const publicado = firstStageDate(a, 'publicado');
+
+    if (start && enviado) planningDurations.push(daysBetween(start, enviado));
+    if (enviado && aceptado) reviewDurations.push(daysBetween(enviado, aceptado));
+    if (aceptado && publicado) acceptToPubDurations.push(daysBetween(aceptado, publicado));
+    if (start && publicado) totalCycleDurations.push(daysBetween(start, publicado));
+  });
+
+  // Build KPI strip
+  const kpiWrap = document.getElementById('phasesKpiStrip');
+  if (kpiWrap) {
+    function kpiCard(label, color, valueDays, meta) {
+      if (valueDays == null) {
+        return `<div class="phases-kpi-card" style="--kpi-color:${color}">
+          <div class="pk-label">${label}</div>
+          <div class="pk-value" style="color:var(--ink-muted);font-style:italic">—</div>
+          <div class="pk-meta">${meta}</div>
+        </div>`;
+      }
+      const months = (valueDays / 30).toFixed(1);
+      return `<div class="phases-kpi-card" style="--kpi-color:${color}">
+        <div class="pk-label">${label}</div>
+        <div class="pk-value">${valueDays}<small>días · ${months} meses</small></div>
+        <div class="pk-meta">${meta}</div>
+      </div>`;
+    }
+
+    const totalPublished = articles.filter(a => a.currentStage === 'publicado').length;
+    const totalInProgress = articles.filter(a => a.currentStage !== 'publicado' && (a.stageHistory || []).length > 0).length;
+
+    const kpiHtml = `
+      <div class="phases-kpi-section-title">Promedios históricos · basado en artículos que ya transitaron cada fase</div>
+      <div class="phases-kpi">
+        ${kpiCard('Planeación (mediana)', '#5d7b9c', median(planningDurations), planningDurations.length > 0 ? `${planningDurations.length} artículos llegaron a enviarse` : 'Ningún artículo enviado aún')}
+        ${kpiCard('Revisión (mediana)', '#b8902b', median(reviewDurations), reviewDurations.length > 0 ? `${reviewDurations.length} artículos fueron aceptados` : 'Ningún artículo aceptado aún')}
+        ${kpiCard('Aceptación → publicación', '#3d6e2c', median(acceptToPubDurations), acceptToPubDurations.length > 0 ? `${acceptToPubDurations.length} artículos publicados` : 'Ningún artículo publicado aún')}
+        ${kpiCard('Ciclo completo (mediana)', 'var(--accent)', median(totalCycleDurations), totalCycleDurations.length > 0 ? `${totalCycleDurations.length} artículos · idea → publicación` : 'Sin ciclos completos')}
+      </div>
+      <div class="phases-kpi">
+        ${kpiCard('Planeación (promedio)', '#5d7b9c', avg(planningDurations), 'media aritmética simple')}
+        ${kpiCard('Revisión (promedio)', '#b8902b', avg(reviewDurations), 'media aritmética simple')}
+        ${kpiCard('Aceptación → publicación (promedio)', '#3d6e2c', avg(acceptToPubDurations), 'media aritmética simple')}
+        <div class="phases-kpi-card" style="--kpi-color:var(--ink)">
+          <div class="pk-label">Estado del portafolio</div>
+          <div class="pk-value">${totalInProgress}<small>en curso · ${totalPublished} publicados</small></div>
+          <div class="pk-meta">${articles.length} artículos en total</div>
+        </div>
+      </div>
+    `;
+    kpiWrap.innerHTML = kpiHtml;
+  }
+
+  // ========================================
+  // PARTE 2: Gráfico Gantt SOLO para artículos en curso
+  // (no publicados). Para cada uno, días en cada fase hasta hoy.
+  // ========================================
+  const inProgress = articles.filter(a => a.currentStage !== 'publicado');
+
+  const data = inProgress.map(a => {
+    const start = firstDateAny(a);
+    const enviado = firstStageDate(a, 'enviado');
+    const aceptado = firstStageDate(a, 'aceptado');
     const stage = a.currentStage;
 
-    // Determine end-of-each-phase reference
-    let plannerEnd, reviewEnd, pubEnd;
+    // Planeación: desde la primera fecha hasta envío (o hoy si no se ha enviado)
+    let plannerEnd;
     if (enviado) plannerEnd = enviado;
-    else if (['enviado','revision','respuesta_revisores','aceptado','publicado'].includes(stage)) plannerEnd = today;
-    else plannerEnd = today; // still in planning
+    else plannerEnd = today; // sigue planeando
 
+    // Revisión: desde envío hasta aceptación (o hoy si sigue en revisión)
+    let reviewEnd;
     if (aceptado) reviewEnd = aceptado;
-    else if (['aceptado','publicado'].includes(stage)) reviewEnd = today;
     else if (['enviado','revision','respuesta_revisores'].includes(stage)) reviewEnd = today;
     else reviewEnd = null;
 
-    if (publicado) pubEnd = publicado;
-    else if (stage === 'publicado') pubEnd = today;
-    else if (stage === 'aceptado') pubEnd = today;
+    // Publicación: desde aceptación hasta hoy (si está aceptado pero no publicado)
+    let pubEnd;
+    if (stage === 'aceptado') pubEnd = today;
     else pubEnd = null;
 
     const planningDays = start && plannerEnd ? daysBetween(start, plannerEnd) : 0;
     const reviewDays = enviado && reviewEnd ? daysBetween(enviado, reviewEnd) : 0;
     const publishDays = aceptado && pubEnd ? daysBetween(aceptado, pubEnd) : 0;
 
-    // Most recent date for sorting (latest activity, month-aligned)
     const lastDate = (a.stageHistory || []).map(h => h.date).filter(Boolean).sort().slice(-1)[0];
     const sortKey = lastDate ? new Date(lastDate + 'T00:00:00').getTime() : 0;
 
@@ -2951,13 +3039,11 @@ function renderPhasesChart() {
     };
   }).filter(d => d.total > 0);
 
-  // Sort by most recent activity
   data.sort((a, b) => b.sortKey - a.sortKey);
 
   setEmptyState('chartPhases', data.length === 0);
   if (data.length === 0) return;
 
-  // Dynamic canvas height: 28px per article + 40px padding, min 200px
   const canvas = document.getElementById('chartPhases');
   const containerHeight = Math.max(200, data.length * 28 + 60);
   canvas.parentElement.style.height = containerHeight + 'px';
