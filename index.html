@@ -344,6 +344,44 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 .bulk-preview-item:last-child { border-bottom: none; }
 .bulk-preview-title { font-weight: 600; color: var(--ink); }
 .bulk-preview-meta { color: var(--ink-muted); font-style: italic; font-family: 'Fraunces', serif; }
+
+/* Welcome modal */
+.welcome-modal .modal { max-width: 820px; }
+.welcome-hero { padding: 32px 36px 12px; text-align: center; border-bottom: 1px solid var(--line-soft); }
+.welcome-hero .wh-mark { width: 60px; height: 60px; border: 2px solid var(--ink); border-radius: 50%; display: inline-grid; place-items: center; font-family: 'Fraunces', serif; font-weight: 700; font-size: 32px; font-style: italic; margin-bottom: 12px; }
+.welcome-hero h2 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 6px; }
+.welcome-hero h2 em { font-style: italic; color: var(--accent); }
+.welcome-hero p { color: var(--ink-soft); font-family: 'Fraunces', serif; font-style: italic; font-size: 15px; max-width: 540px; margin: 0 auto; line-height: 1.5; }
+.welcome-body { padding: 24px 36px; }
+.welcome-features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 8px; }
+.wf-item { display: flex; gap: 14px; padding: 14px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: var(--radius-md); transition: all .15s ease; }
+.wf-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--line); }
+.wf-icon { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; color: var(--paper); }
+.wf-icon.c1 { background: var(--accent); }
+.wf-icon.c2 { background: var(--sage); }
+.wf-icon.c3 { background: var(--gold); }
+.wf-icon.c4 { background: var(--rose); }
+.wf-icon.c5 { background: #5d7b9c; }
+.wf-icon.c6 { background: var(--ink); }
+.wf-content { flex: 1; min-width: 0; }
+.wf-title { font-weight: 600; font-size: 14px; color: var(--ink); margin-bottom: 3px; }
+.wf-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
+.welcome-howto { margin-top: 20px; padding: 18px 22px; background: linear-gradient(to right, rgba(184,92,46,.06), rgba(184,92,46,.02)); border-left: 3px solid var(--accent); border-radius: var(--radius-md); }
+.welcome-howto h3 { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.welcome-howto ol { padding-left: 22px; }
+.welcome-howto li { font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; line-height: 1.5; }
+.welcome-howto li strong { color: var(--ink); font-weight: 600; }
+.welcome-tip { margin-top: 14px; padding: 12px 16px; background: var(--paper-2); border-radius: var(--radius-sm); font-size: 12px; color: var(--ink-muted); font-style: italic; font-family: 'Fraunces', serif; }
+.welcome-tip strong { font-style: normal; color: var(--ink); font-family: 'Manrope', sans-serif; font-weight: 600; }
+.welcome-footer-row { display: flex; align-items: center; gap: 12px; padding: 16px 36px; background: var(--paper-2); border-top: 1px solid var(--line-soft); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.welcome-footer-row label { flex: 1; font-size: 12px; color: var(--ink-muted); display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.welcome-footer-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+@media (max-width: 700px) {
+  .welcome-features { grid-template-columns: 1fr; }
+  .welcome-hero { padding: 24px 20px 12px; }
+  .welcome-body { padding: 20px 20px; }
+  .welcome-footer-row { padding: 14px 20px; }
+}
 </style>
 </head>
 <body>
@@ -359,6 +397,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
     </div>
     <div class="header-actions">
       <button class="btn btn-ghost icon-btn" id="btnSearch" title="Búsqueda global (Ctrl+K)">⌕</button>
+      <button class="btn btn-ghost icon-btn" id="btnHelp" title="Cómo usar la plataforma">?</button>
       <button class="btn btn-ghost" id="btnGoals">◎ Metas</button>
       <button class="btn btn-ghost" id="btnExportCV" title="CV en Markdown">↓ CV md</button>
       <button class="btn btn-ghost" id="btnExportCVAnid" title="CV formato ANID/FONDECYT">↓ CV ANID</button>
@@ -419,8 +458,8 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
         <option value="Q3">Q3</option><option value="Q4">Q4</option>
       </select>
       <select id="sortBy">
-        <option value="updated">Recientes primero</option>
-        <option value="created">Por creación</option>
+        <option value="updated">Por fecha (más reciente primero)</option>
+        <option value="created">Por creación del registro</option>
         <option value="title">Por título</option>
         <option value="stage">Por etapa</option>
         <option value="impact">Por impacto (desc)</option>
@@ -499,6 +538,18 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
         <h3>Revistas frecuentes</h3>
         <div class="chart-sub">Top 8 en tu portafolio</div>
         <div class="chart-wrap"><canvas id="chartJournals"></canvas><div class="chart-empty">Aún no hay revistas registradas</div></div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:32px">Tiempo en cada fase</div>
+    <div class="chart-card full-width" style="margin-bottom:20px">
+      <h3>Duración por fase de cada artículo</h3>
+      <div class="chart-sub">Días invertidos en Planeación, Revisión y Publicación · ordenado por más reciente</div>
+      <div class="chart-wrap" id="chartPhasesWrap" style="height:auto;min-height:200px"><canvas id="chartPhases"></canvas><div class="chart-empty">Sin datos suficientes para calcular fases.<span>Necesitas artículos con al menos un cambio de etapa registrado.</span></div></div>
+      <div style="margin-top:14px;font-size:11px;color:var(--ink-muted);font-style:italic;font-family:'Fraunces',serif;text-align:center">
+        <span style="display:inline-block;width:10px;height:10px;background:#5d7b9c;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Planeación (idea → enviado)
+        <span style="display:inline-block;width:10px;height:10px;background:#b8902b;border-radius:2px;vertical-align:middle;margin:0 4px 0 14px"></span>Revisión (enviado → aceptado)
+        <span style="display:inline-block;width:10px;height:10px;background:#3d6e2c;border-radius:2px;vertical-align:middle;margin:0 4px 0 14px"></span>Publicación (aceptado → publicado)
       </div>
     </div>
 
@@ -948,6 +999,81 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
   <button class="ib-close" id="btnCloseInstall">×</button>
 </div>
 
+<!-- MODAL DE BIENVENIDA / TOUR -->
+<div class="modal-overlay welcome-modal" id="modalWelcome">
+  <div class="modal">
+    <div class="welcome-hero">
+      <div class="wh-mark">P</div>
+      <h2>Bienvenido a <em>Pipeline Académico</em></h2>
+      <p>Tu plataforma para gestionar publicaciones, proyectos y congresos desde un solo lugar — sin servidores, sin cuentas, todo en tu navegador.</p>
+    </div>
+    <div class="welcome-body">
+      <div class="welcome-features">
+        <div class="wf-item">
+          <div class="wf-icon c1">A</div>
+          <div class="wf-content">
+            <div class="wf-title">Artículos científicos</div>
+            <div class="wf-desc">Gestiona el ciclo completo de cada paper, desde la idea hasta la publicación. Calcula H-index, citas y factor de impacto automáticamente.</div>
+          </div>
+        </div>
+        <div class="wf-item">
+          <div class="wf-icon c2">P</div>
+          <div class="wf-content">
+            <div class="wf-title">Proyectos de investigación</div>
+            <div class="wf-desc">Lleva el seguimiento de tus postulaciones a FONDECYT, FONDEF y otros fondos. Alertas automáticas de deadlines.</div>
+          </div>
+        </div>
+        <div class="wf-item">
+          <div class="wf-icon c3">C</div>
+          <div class="wf-content">
+            <div class="wf-title">Congresos y ponencias</div>
+            <div class="wf-desc">Registra tus presentaciones, tipo de ponencia y eventos en los que has participado.</div>
+          </div>
+        </div>
+        <div class="wf-item">
+          <div class="wf-icon c4">M</div>
+          <div class="wf-content">
+            <div class="wf-title">Metas anuales</div>
+            <div class="wf-desc">Define cuántos papers enviar/publicar y postulaciones presentar este año. Visualiza tu avance.</div>
+          </div>
+        </div>
+        <div class="wf-item">
+          <div class="wf-icon c5">⌕</div>
+          <div class="wf-content">
+            <div class="wf-title">Importación masiva</div>
+            <div class="wf-desc">Carga papers desde lista de DOIs, archivos BibTeX o RIS. La plataforma consulta Crossref y trae los metadatos automáticamente.</div>
+          </div>
+        </div>
+        <div class="wf-item">
+          <div class="wf-icon c6">↓</div>
+          <div class="wf-content">
+            <div class="wf-title">CV ANID / FONDECYT</div>
+            <div class="wf-desc">Genera tu CV en formato listo para imprimir o adjuntar a postulaciones, con un solo clic.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="welcome-howto">
+        <h3>Primeros pasos sugeridos</h3>
+        <ol>
+          <li><strong>Importa tus papers existentes:</strong> pulsa <strong>⇪ Lote</strong> arriba y pega una lista de DOIs, o un archivo BibTeX exportado desde Google Scholar/Scopus.</li>
+          <li><strong>Define tus metas del año:</strong> botón <strong>◎ Metas</strong>. Te ayudará a medir tu avance en el dashboard.</li>
+          <li><strong>Cada semana:</strong> actualiza el estado de tus papers (cambio de etapa con fecha) y agrega papers nuevos.</li>
+          <li><strong>Cada mes:</strong> pulsa <strong>↓ Exportar</strong> para respaldar tu JSON. Tus datos viven en este navegador — sin respaldo se pueden perder si limpias cookies.</li>
+        </ol>
+      </div>
+
+      <div class="welcome-tip">
+        <strong>Atajo útil:</strong> presiona <strong>Ctrl+K</strong> (o ⌘+K en Mac) en cualquier momento para abrir la búsqueda global de artículos, proyectos y congresos. Puedes volver a ver este tour pulsando <strong>?</strong> en la barra superior.
+      </div>
+    </div>
+    <div class="welcome-footer-row">
+      <label><input type="checkbox" id="dontShowWelcome"> No mostrar al iniciar</label>
+      <button class="btn btn-primary" id="btnCloseWelcome">Comenzar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -987,9 +1113,6 @@ const STORAGE_ARTICLES = 'articles_v2';
 const STORAGE_PROJECTS = 'projects_v1';
 const STORAGE_CONFERENCES = 'conferences_v1';
 const STORAGE_GOALS = 'goals_v1';
-
-// SEED DATA: Tus 20 artículos pre-cargados. Solo se usan si el navegador no tiene datos previos.
-const SEED_ARTICLES = [{"title":"From Random to Oriented: Shear‐Induced Alignment of Fillers in Polymer Matrices","journal":"Polymer Composites","publisher":"Wiley","quartile":"Q2","impactFactor":4.7,"authors":["Francisco Fernández-Gil","Julio Leyrer"],"myPosition":2,"totalAuthors":2,"citations":4,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5pf6k6cuw9m","createdAt":"2026-05-14T16:29:58.134Z","stageHistory":[{"stage":"publicado","date":"2025-11-20"}]},{"title":"Onset of cabbeling instabilities in superconfined two-fluid systems","journal":"Physic of Fluids","publisher":"AIP Publishing","quartile":"Q1","impactFactor":4.3,"authors":["Julio Leyrer","Hugo N. Ulloa","Jaime H Ortega","J. A. Letelier"],"myPosition":1,"totalAuthors":4,"citations":0,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5ptitlxs75r","createdAt":"2026-05-14T16:41:07.209Z","stageHistory":[{"stage":"publicado","date":"2024-12-10"}]},{"title":"Tendencias investigativas en Tecnologías Verdes orientadas a la Protección Ambiental","journal":"Revista Ibérica de Sistemas e Tecnologias de Informação","publisher":"Scopus","quartile":"Q4","impactFactor":null,"authors":["Luis Fernando Garces Giraldo","Vanessa García Pineda","Alejandro Valencia-Arias","Wilmer Londoño Celis","Martha LUZ Benjumea Arias","Hernán Uribe-Bedoya","Julio Leyrer"],"myPosition":7,"totalAuthors":7,"citations":0,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5pwmm73car5","createdAt":"2026-05-14T16:43:32.095Z","stageHistory":[{"stage":"publicado","date":"2024-05-14"}]},{"title":"Research Trends in the Use of the Internet of Things in Sustainability Practices: A Systematic Review","journal":"Sustainability","publisher":"MDPI","quartile":"Q3","impactFactor":3.3,"authors":["Alejandro Valencia-Arias","Juana Ramírez Dávila","Wilmer Londoño Celis","Lucia Palacios Moya","Julio Leyrer","Erica Agudelo-Ceballos","Hernán Uribe-Bedoya"],"myPosition":5,"totalAuthors":7,"citations":17,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5q3cjtpm4rx","createdAt":"2026-05-14T16:48:45.641Z","stageHistory":[{"stage":"publicado","date":"2024-03-14"}]},{"title":"Scaling CO2–brine mixing in permeable media via analogue models","journal":"Journal of Fluid Mechanics","publisher":"Cambridge Univ Press","quartile":"Q1","impactFactor":3.9,"authors":["Juvenal Antonio Letelier","Hugo N. Ulloa","Julio Leyrer","Jaime H Ortega"],"myPosition":3,"totalAuthors":4,"citations":16,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5vbept7yxda","createdAt":"2026-05-14T19:14:59.777Z","stageHistory":[{"stage":"publicado","date":"2023-05-04"}]},{"title":"Effect of the natural aging process on the shear strength of FRP composite single lap joints","journal":"International Journal of Adhesion and Adhesives","publisher":"Elsevier","quartile":"Q2","impactFactor":3.5,"authors":["Renato Hunter","A. Vizán","Jhoan Perez","Julio Leyrer","Pamela Hidalgo","Boris J. Pavez","L.F.M. da Silva"],"myPosition":4,"totalAuthors":7,"citations":37,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5vf447j19wa","createdAt":"2026-05-14T19:17:52.663Z","stageHistory":[{"stage":"publicado","date":"2018-08-14"}]},{"title":"Factor Optimization in the Manufacturing Process of Dye-Sensitized Solar Cells Based on Naturally Extracted Dye from a Maqui and Blackberry Mixture (Aristotelia Chilensis and Rubus Glaucus)","journal":"Journal of Electronic Materials","publisher":"Springer","quartile":"Q2","impactFactor":2.5,"authors":["Julio Leyrer","Mónica Rubilar","Eduardo Morales","Boris J. Pavez","Eduardo Leal","Renato Hunter"],"myPosition":1,"totalAuthors":6,"citations":20,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5vhrggxko20","createdAt":"2026-05-14T19:19:56.224Z","stageHistory":[{"stage":"publicado","date":"2018-07-14"}]},{"title":"Influence of dissimilar composite adherends on the mechanical adhesion of bonded joints for small blade wind turbine applications","journal":"International Journal of Adhesion and Adhesives","publisher":"Elsevier","quartile":"Q2","impactFactor":3.5,"authors":["Renato Hunter","Julio Leyrer","Eduardo Leal","A. Vizán","Jhoan Perez","L.F.M. da Silva"],"myPosition":2,"totalAuthors":6,"citations":28,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","doi":"10.1016/j.ijadhadh.2018.02.018","id":"mp5vkoxztlrjg","createdAt":"2026-05-14T19:22:12.935Z","stageHistory":[{"stage":"publicado","date":"2018-03-14"}]},{"title":"Effect of the structural reinforcement of composite adherends on the mechanical strength of adhesive joints","journal":"Materialwissenschaft und Werkstofftechnik","publisher":"Wiley","quartile":"Q4","impactFactor":1.1,"authors":["Renato Hunter","A. Vizán","Jhoan Perez","J. Möller","Julio Leyrer","L.F.M. da Silva"],"myPosition":5,"totalAuthors":6,"citations":1,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","doi":"10.1002/mawe.201600565","id":"mp5vnwwf1tjdo","createdAt":"2026-05-14T19:24:43.215Z","stageHistory":[{"stage":"publicado","date":"2017-06-14"}]},{"title":"Development of dye-sensitized solar cells based on naturally extracted dye from the maqui berry (Aristotelia chilensis)","journal":"Optical Materials","publisher":"Elsevier","quartile":"Q1","impactFactor":4.2,"authors":["Julio Leyrer","Renato Hunter","Mónica Rubilar","Boris J. Pavez","Eduardo Morales","Simonet Torres"],"myPosition":1,"totalAuthors":6,"citations":35,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","doi":"10.1016/j.optmat.2016.08.021","id":"mp5vqrbcp9pza","createdAt":"2026-05-14T19:26:55.944Z","stageHistory":[{"stage":"publicado","date":"2016-10-14"}]},{"title":"Experimental study of the effect of microspheres and milled glass in the adhesive on the mechanical adhesion of single lap joints","journal":"The Journal of Adhesion","publisher":"","quartile":"Q2","impactFactor":2.3,"authors":["R Hunter","J Möller","A Vizán","J Pérez","J Molina","J Leyrer"],"myPosition":null,"totalAuthors":6,"citations":13,"citationsUpdated":"2026-05-14","currentStage":"publicado","notes":"","id":"mp5w1wkug1l6u","createdAt":"2026-05-14T19:35:35.982Z","stageHistory":[{"stage":"publicado","date":"2016-04-14"}]},{"title":"Factors influencing satisfaction, loyalty and continuity in volunteering among young people in South America Available to Purchase","journal":"Social Responsibility Journal","publisher":"","quartile":"Q2","impactFactor":4.1,"authors":["Ada Gallegos","Renata Teodori de la Puente","Julio Leyrer","Alejandro Valencia-Arias","Jackeline Valencia-Arias","Oscar Bravo Castillo","Waldo Albarracín Sánchez"],"myPosition":3,"totalAuthors":7,"citations":0,"citationsUpdated":"2026-05-14","currentStage":"aceptado","notes":"","doi":"10.1108/SRJ-11-2025-1235","id":"mp5wm72iasyva","createdAt":"2026-05-14T19:51:22.698Z","stageHistory":[{"stage":"publicado","date":"2026-05-05"},{"stage":"aceptado","date":"2026-05-05"}]},{"title":"A scaling framework for a microstructural anisotropy in 3D-printed polymer composites for a rational design of biomimetic scaffolds","journal":"Mechanics of Materials","publisher":"Elsevier","quartile":"Q1","impactFactor":4.1,"authors":["Julio Leyrer","Josefa Núñez-Belmar","Jorge Leiva","Humberto Palza","Renato Hunter","Constanza Tapia Contreras","Francisco Fernandez-Gil"],"myPosition":1,"totalAuthors":7,"citations":0,"citationsUpdated":"2026-05-14","currentStage":"enviado","notes":"Manuscript Number: MECMAT-D-26-00583","id":"mp5ws1jix96o6","createdAt":"2026-05-14T19:55:55.470Z","stageHistory":[{"stage":"enviado","date":"2026-05-14"}]},{"title":"Interfacial Selectivity in Dental Implant Design: From Surface Forces to Peri-implant Ecology","journal":"ACS Biomaterials Science & Engineering","publisher":"Amer Chemical Soc","quartile":"Q2","impactFactor":5.5,"authors":["Núñez-Belmar","Leyrer","Beltrán","Borie","Fernández-Gil"],"myPosition":2,"totalAuthors":5,"citations":0,"citationsUpdated":"2026-05-14","currentStage":"enviado","notes":"Manuscript ID: ab-2026-00878a","id":"mp5wvdpqm5qrv","createdAt":"2026-05-14T19:58:31.214Z","stageHistory":[{"stage":"enviado","date":"2026-05-14"}]},{"title":"Self-Powered Interfacial Electrokinetics: Theoretical and Performance Framework of Piezoelectro-osmosis in Micro-confined Media","journal":"International Journal of Engineering Science","publisher":"Elsevier","quartile":"Q1","impactFactor":5.7,"authors":["Julio Leyrer","Francisco Fernández-Gil"],"myPosition":1,"totalAuthors":2,"citations":0,"citationsUpdated":"2026-05-14","currentStage":"respuesta_revisores","notes":"JENS-D-26-00101R1","id":"mp5wxvrbjp4am","createdAt":"2026-05-14T20:00:27.911Z","stageHistory":[{"stage":"respuesta_revisores","date":"2026-05-14"}]},{"title":"Resina-Pigmento","journal":"Polymer Degradation and Stability","publisher":"Elsevier","quartile":"Q1","impactFactor":7.4,"authors":[],"myPosition":null,"totalAuthors":null,"citations":0,"citationsUpdated":null,"currentStage":"avance_preliminar","notes":"","id":"mp5wzssgf8ya4","createdAt":"2026-05-14T20:01:57.376Z","stageHistory":[{"stage":"avance_preliminar","date":"2026-05-14"}]},{"title":"Alinamiento Experimental Reological Shielding","journal":"","publisher":"","quartile":"","impactFactor":null,"authors":[],"myPosition":null,"totalAuthors":null,"citations":null,"citationsUpdated":null,"currentStage":"idea","notes":"","id":"mp5x0kq815cge","createdAt":"2026-05-14T20:02:33.584Z","stageHistory":[{"stage":"idea","date":"2026-05-14"}]},{"title":"Trifaces Theorical-Numerical simulation","journal":"","publisher":"","quartile":"","impactFactor":null,"authors":[],"myPosition":null,"totalAuthors":null,"citations":null,"citationsUpdated":null,"currentStage":"idea","notes":"","id":"mp5x1lg002pth","createdAt":"2026-05-14T20:03:21.168Z","stageHistory":[{"stage":"idea","date":"2026-05-14"}]},{"title":"Piezoelectroosmosis Exp","journal":"","publisher":"","quartile":"","impactFactor":null,"authors":[],"myPosition":null,"totalAuthors":null,"citations":null,"citationsUpdated":null,"currentStage":"preparacion","notes":"","id":"mp5x22catse2k","createdAt":"2026-05-14T20:03:43.066Z","stageHistory":[{"stage":"preparacion","date":"2026-05-14"}]},{"title":"Alineamieto Plaquetas","journal":"","publisher":"","quartile":"","impactFactor":null,"authors":[],"myPosition":null,"totalAuthors":null,"citations":null,"citationsUpdated":null,"currentStage":"avance_preliminar","notes":"","id":"mp5x2ut7twext","createdAt":"2026-05-14T20:04:19.963Z","stageHistory":[{"stage":"avance_preliminar","date":"2026-05-14"}]}];
 
 let articles = [], projects = [], conferences = [];
 let goals = {}; // { year: { articlesSubmitted, articlesPublished, projectsSubmitted, projectsAwarded, conferencesPresented } }
@@ -1151,9 +1274,8 @@ async function loadArticles() {
     if (r && r.value) {
       articles = JSON.parse(r.value);
     } else {
-      // First run: seed with the 20 articles
-      articles = JSON.parse(JSON.stringify(SEED_ARTICLES));
-      await saveArticles();
+      // First run: start with empty array (no seed data)
+      articles = [];
     }
     let migrated = false;
     articles.forEach(a => {
@@ -1249,6 +1371,7 @@ async function init() {
   setupHeaderActions();
   setupBulkImport();
   setupPWA();
+  setupWelcome();
   populateStageSelectors();
   render();
 }
@@ -1980,13 +2103,31 @@ function renderArticles() {
     }
     return true;
   });
+  // Fecha más reciente de actividad real del artículo:
+  // toma la última fecha de stageHistory; ignora updatedAt (modificación del registro).
+  // Se compara a nivel mes/año (día = 1) para que artículos del mismo mes queden agrupados.
+  function articleLatestActivityMonth(a) {
+    const dates = (a.stageHistory || []).map(h => h.date).filter(Boolean);
+    if (dates.length === 0) {
+      if (a.createdAt) dates.push(a.createdAt.slice(0, 10));
+      else return 0;
+    }
+    const latest = dates.sort().slice(-1)[0]; // YYYY-MM-DD format sorts lexicographically
+    const d = new Date(latest + 'T00:00:00');
+    return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  }
+
   filtered.sort((x, y) => {
     if (sort === 'title') return (x.title||'').localeCompare(y.title||'');
     if (sort === 'created') return new Date(y.createdAt) - new Date(x.createdAt);
     if (sort === 'stage') return ARTICLE_STAGES.findIndex(s => s.key === y.currentStage) - ARTICLE_STAGES.findIndex(s => s.key === x.currentStage);
     if (sort === 'impact') return (y.impactFactor||0) - (x.impactFactor||0);
     if (sort === 'citations') return (y.citations||0) - (x.citations||0);
-    return new Date(y.updatedAt || y.createdAt) - new Date(x.updatedAt || x.createdAt);
+    // Default "updated": ordenar por mes/año de actividad real más reciente
+    const diff = articleLatestActivityMonth(y) - articleLatestActivityMonth(x);
+    if (diff !== 0) return diff;
+    // Desempate por título alfabético dentro del mismo mes
+    return (x.title||'').localeCompare(y.title||'');
   });
   const grid = document.getElementById('articlesGrid');
   if (filtered.length === 0) {
@@ -2136,6 +2277,7 @@ function renderAllStats() {
   renderMonthlyChart();
   renderYearlyChart();
   renderJournalsChart();
+  renderPhasesChart();
   renderTagsChart();
   renderCitationsByYearChart();
   renderProjectStageChart();
@@ -2745,6 +2887,136 @@ async function handleSaveGoals() {
   closeModal('modalGoals');
   render();
   showToast(`Metas de ${year} guardadas`);
+}
+
+function renderPhasesChart() {
+  // Calcular para cada artículo los días en cada fase usando stageHistory.
+  // Fases:
+  //   PLANEACIÓN: desde la primera fecha registrada hasta 'enviado' (o hoy si no se ha enviado).
+  //   REVISIÓN: desde 'enviado' hasta 'aceptado' (o hoy si sigue en revisión).
+  //   PUBLICACIÓN: desde 'aceptado' hasta 'publicado' (o hoy si aceptado sin publicar).
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  function firstStageDate(a, stageKey) {
+    const entry = (a.stageHistory || []).find(h => h.stage === stageKey && h.date);
+    return entry ? new Date(entry.date + 'T00:00:00') : null;
+  }
+  function firstDateAny(a) {
+    const dates = (a.stageHistory || []).filter(h => h.date).map(h => new Date(h.date + 'T00:00:00'));
+    if (dates.length === 0) return null;
+    return new Date(Math.min(...dates.map(d => d.getTime())));
+  }
+  function daysBetween(a, b) {
+    if (!a || !b) return 0;
+    return Math.max(0, Math.round((b - a) / 86400000));
+  }
+
+  const data = articles.map(a => {
+    const start = firstDateAny(a);
+    const enviado = firstStageDate(a, 'enviado');
+    const aceptado = firstStageDate(a, 'aceptado');
+    const publicado = firstStageDate(a, 'publicado');
+    const stage = a.currentStage;
+
+    // Determine end-of-each-phase reference
+    let plannerEnd, reviewEnd, pubEnd;
+    if (enviado) plannerEnd = enviado;
+    else if (['enviado','revision','respuesta_revisores','aceptado','publicado'].includes(stage)) plannerEnd = today;
+    else plannerEnd = today; // still in planning
+
+    if (aceptado) reviewEnd = aceptado;
+    else if (['aceptado','publicado'].includes(stage)) reviewEnd = today;
+    else if (['enviado','revision','respuesta_revisores'].includes(stage)) reviewEnd = today;
+    else reviewEnd = null;
+
+    if (publicado) pubEnd = publicado;
+    else if (stage === 'publicado') pubEnd = today;
+    else if (stage === 'aceptado') pubEnd = today;
+    else pubEnd = null;
+
+    const planningDays = start && plannerEnd ? daysBetween(start, plannerEnd) : 0;
+    const reviewDays = enviado && reviewEnd ? daysBetween(enviado, reviewEnd) : 0;
+    const publishDays = aceptado && pubEnd ? daysBetween(aceptado, pubEnd) : 0;
+
+    // Most recent date for sorting (latest activity, month-aligned)
+    const lastDate = (a.stageHistory || []).map(h => h.date).filter(Boolean).sort().slice(-1)[0];
+    const sortKey = lastDate ? new Date(lastDate + 'T00:00:00').getTime() : 0;
+
+    return {
+      article: a,
+      planningDays, reviewDays, publishDays,
+      total: planningDays + reviewDays + publishDays,
+      sortKey
+    };
+  }).filter(d => d.total > 0);
+
+  // Sort by most recent activity
+  data.sort((a, b) => b.sortKey - a.sortKey);
+
+  setEmptyState('chartPhases', data.length === 0);
+  if (data.length === 0) return;
+
+  // Dynamic canvas height: 28px per article + 40px padding, min 200px
+  const canvas = document.getElementById('chartPhases');
+  const containerHeight = Math.max(200, data.length * 28 + 60);
+  canvas.parentElement.style.height = containerHeight + 'px';
+
+  const labels = data.map(d => {
+    const t = d.article.title;
+    return t.length > 60 ? t.slice(0, 60) + '…' : t;
+  });
+
+  charts.phases = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Planeación', data: data.map(d => d.planningDays), backgroundColor: '#5d7b9c', borderWidth: 0, borderRadius: 2, borderSkipped: false, stack: 'phases' },
+        { label: 'Revisión', data: data.map(d => d.reviewDays), backgroundColor: '#b8902b', borderWidth: 0, borderRadius: 2, borderSkipped: false, stack: 'phases' },
+        { label: 'Publicación', data: data.map(d => d.publishDays), backgroundColor: '#3d6e2c', borderWidth: 0, borderRadius: 2, borderSkipped: false, stack: 'phases' }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => data[items[0].dataIndex].article.title,
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.x} días`,
+            footer: (items) => {
+              const idx = items[0].dataIndex;
+              const d = data[idx];
+              const status = articleStageInfo(d.article.currentStage).label;
+              return `Total: ${d.total} días · Estado: ${status}`;
+            }
+          },
+          filter: (item) => item.parsed.x > 0
+        }
+      },
+      scales: {
+        x: {
+          stacked: true, beginAtZero: true,
+          ticks: { color: '#75798c', callback: (v) => `${v}d` },
+          grid: { color: '#ebe3cf' },
+          title: { display: true, text: 'Días', color: '#75798c', font: { size: 11 } }
+        },
+        y: {
+          stacked: true,
+          ticks: { color: '#3d4256', font: { size: 11 }, autoSkip: false },
+          grid: { display: false }
+        }
+      },
+      onClick: (e, els) => {
+        if (els.length > 0) {
+          const idx = els[0].index;
+          openArticleModal(data[idx].article.id);
+        }
+      }
+    }
+  });
 }
 
 function renderTagsChart() {
@@ -3582,6 +3854,56 @@ function setupPWA() {
   window.addEventListener('appinstalled', () => {
     document.getElementById('installBanner').classList.remove('show');
   });
+}
+
+/* =====================================================
+   WELCOME MODAL — tour de bienvenida
+   ===================================================== */
+const STORAGE_WELCOME_DISMISSED = 'pipeline_welcome_dismissed';
+
+function setupWelcome() {
+  const btnHelp = document.getElementById('btnHelp');
+  const btnClose = document.getElementById('btnCloseWelcome');
+  const modal = document.getElementById('modalWelcome');
+
+  if (btnHelp) btnHelp.addEventListener('click', () => openWelcome());
+  if (btnClose) btnClose.addEventListener('click', closeWelcome);
+
+  // Click en backdrop también cierra respetando preferencia
+  if (modal) {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeWelcome();
+    });
+  }
+
+  // Mostrar automáticamente si nunca se ha cerrado
+  try {
+    const dismissed = localStorage.getItem(STORAGE_WELCOME_DISMISSED) === '1';
+    if (!dismissed) {
+      setTimeout(() => openWelcome(), 400);
+    }
+  } catch (e) { setTimeout(() => openWelcome(), 400); }
+}
+
+function openWelcome() {
+  // Reset checkbox state from saved preference
+  const checkbox = document.getElementById('dontShowWelcome');
+  try {
+    checkbox.checked = localStorage.getItem(STORAGE_WELCOME_DISMISSED) === '1';
+  } catch (e) {}
+  document.getElementById('modalWelcome').classList.add('open');
+}
+
+function closeWelcome() {
+  const checkbox = document.getElementById('dontShowWelcome');
+  try {
+    if (checkbox && checkbox.checked) {
+      localStorage.setItem(STORAGE_WELCOME_DISMISSED, '1');
+    } else {
+      localStorage.removeItem(STORAGE_WELCOME_DISMISSED);
+    }
+  } catch (e) {}
+  document.getElementById('modalWelcome').classList.remove('open');
 }
 
 init();
