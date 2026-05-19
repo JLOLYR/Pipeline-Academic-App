@@ -205,7 +205,8 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 .funnel-group-head { font-family: 'Fraunces', serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between; align-items: baseline; }
 .funnel-group-head .gh-count { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--ink); font-weight: 500; }
 .funnel-chips { display: flex; flex-direction: column; gap: 7px; }
-.funnel-chip { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); }
+.funnel-chip { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); padding: 4px 6px; border-radius: 4px; cursor: pointer; transition: background .12s ease; }
+.funnel-chip:hover { background: var(--paper-2); color: var(--ink); }
 .funnel-chip .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .funnel-chip strong { font-family: 'JetBrains Mono', monospace; color: var(--ink); margin-left: auto; font-size: 14px; font-weight: 600; }
 
@@ -393,6 +394,47 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 .phases-kpi-card .pk-meta { font-size: 11px; color: var(--ink-muted); margin-top: 3px; font-style: italic; font-family: 'Fraunces', serif; }
 .phases-kpi-section-title { font-family: 'Fraunces', serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); font-weight: 600; margin: 18px 0 10px; display: flex; align-items: center; gap: 12px; }
 .phases-kpi-section-title::before { content: ''; width: 24px; height: 1px; background: var(--ink-muted); }
+
+/* Active filter banner shown above article list when filtered from a chart */
+.active-filter-banner { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: linear-gradient(to right, rgba(184,92,46,.08), rgba(184,92,46,.02)); border: 1px solid rgba(184,92,46,.2); border-left: 3px solid var(--accent); border-radius: var(--radius-md); margin-bottom: 16px; font-size: 13px; }
+.active-filter-banner .afb-icon { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--paper); display: grid; place-items: center; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.active-filter-banner .afb-text { flex: 1; color: var(--ink); }
+.active-filter-banner .afb-text strong { font-weight: 600; }
+.active-filter-banner button { background: transparent; border: 1px solid var(--line); padding: 5px 12px; border-radius: 4px; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--ink-soft); }
+.active-filter-banner button:hover { background: var(--paper); color: var(--ink); border-color: var(--ink-muted); }
+
+/* Visual hint: clickable cards/segments */
+.clickable-hint { cursor: pointer; transition: transform .12s ease; }
+.clickable-hint:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.stat-card.clickable-hint:hover { box-shadow: var(--shadow-md); border-color: var(--accent); }
+
+/* Submission history inside article modal */
+.subm-card { background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(--stage-color, var(--accent)); }
+.subm-card.outcome-rejected { --stage-color: var(--accent-deep); }
+.subm-card.outcome-accepted { --stage-color: var(--sage); }
+.subm-card.outcome-pending { --stage-color: var(--gold); }
+.subm-card.outcome-withdrawn { --stage-color: var(--ink-muted); }
+.subm-card-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.subm-journal { font-weight: 600; font-size: 14px; color: var(--ink); }
+.subm-dates { font-size: 11px; color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
+.subm-outcome { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 10px; color: var(--paper); background: var(--stage-color, var(--accent)); }
+.subm-events-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding-left: 8px; }
+.subm-event { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-soft); }
+.subm-event .se-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.subm-event .se-type { flex: 1; font-weight: 500; }
+.subm-event .se-date { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.subm-event .se-delete { background: transparent; border: none; color: var(--ink-muted); cursor: pointer; font-size: 14px; padding: 2px 6px; line-height: 1; opacity: 0.5; }
+.subm-event .se-delete:hover { opacity: 1; color: var(--accent-deep); }
+.subm-add-row { display: grid; grid-template-columns: 1fr 130px 130px auto; gap: 8px; padding: 10px 12px; background: var(--paper); border: 1px dashed var(--line); border-radius: var(--radius-sm); margin-top: 10px; align-items: end; }
+.subm-add-row .sa-field { display: flex; flex-direction: column; gap: 4px; }
+.subm-add-row label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); font-weight: 600; }
+.subm-add-row select, .subm-add-row input { font-family: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper-2); color: var(--ink); }
+.subm-add-row button { padding: 7px 14px; font-size: 12px; height: 33px; }
+.subm-empty { padding: 14px; text-align: center; font-family: 'Fraunces', serif; font-style: italic; color: var(--ink-muted); font-size: 13px; }
+.subm-new-btn { padding: 8px 14px; font-size: 12px; }
+@media (max-width: 700px) {
+  .subm-add-row { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -460,6 +502,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
   </section>
 
   <section class="view" id="view-articles">
+    <div id="activeFilterBanner"></div>
     <div class="toolbar">
       <input type="search" id="searchInput" placeholder="Buscar por título, revista, autor, DOI…">
       <select id="filterStage"><option value="">Todas las etapas</option></select>
@@ -567,9 +610,38 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 
     <div class="section-title" style="margin-top:32px">Pipeline mes a mes</div>
     <div class="chart-card full-width" style="margin-bottom:20px">
-      <h3>Distribución por etapa en el tiempo <span id="timelineRangeSelector" class="year-selector"></span></h3>
+      <h3>Distribución por etapa en el tiempo
+        <span id="timelineExcludePublished" class="entity-filter"></span>
+        <span id="timelineRangeSelector" class="year-selector"></span>
+      </h3>
       <div class="chart-sub">Snapshot al cierre de cada mes · cuántos artículos había en cada etapa</div>
       <div class="chart-wrap tall"><canvas id="chartStageTimeline"></canvas><div class="chart-empty">Sin historial suficiente.<span>Necesitas artículos con cambios de etapa registrados.</span></div></div>
+    </div>
+
+    <div class="section-title" style="margin-top:32px">Historial de envíos y rechazos</div>
+    <div class="stats-section">
+      <div class="chart-card">
+        <h3>Revistas que más rechazan</h3>
+        <div class="chart-sub">Top revistas con más rechazos · clic para filtrar</div>
+        <div class="chart-wrap"><canvas id="chartRejectionJournals"></canvas><div class="chart-empty">Sin rechazos registrados todavía.<span>Agrégalos en el historial de envíos del artículo.</span></div></div>
+      </div>
+      <div class="chart-card">
+        <h3>Distribución de eventos</h3>
+        <div class="chart-sub">Major rev · Minor rev · Rechazos · Aceptaciones</div>
+        <div class="chart-wrap"><canvas id="chartEventTypes"></canvas><div class="chart-empty">Sin eventos registrados todavía.</div></div>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="chart-card">
+        <h3>Aceptación por revista</h3>
+        <div class="chart-sub">Tasa de éxito en revistas donde tienes 2 o más envíos</div>
+        <div class="chart-wrap"><canvas id="chartJournalSuccess"></canvas><div class="chart-empty">Sin suficientes envíos comparables.</div></div>
+      </div>
+      <div class="chart-card">
+        <h3>Resumen</h3>
+        <div class="chart-sub">Indicadores generales del portafolio</div>
+        <div id="submissionsSummary" style="padding:6px 4px"></div>
+      </div>
     </div>
 
     <div class="section-title" style="margin-top:32px">Áreas temáticas</div>
@@ -700,6 +772,15 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
           <div class="cby-table" id="cbyTable"></div>
           <div class="cby-total" id="cbyTotal"></div>
         </div>
+
+        <div id="submissionsSection" class="stage-timeline" style="display:none">
+          <h4>Historial de envíos a revistas
+            <span style="font-weight:400;color:var(--ink-muted);font-size:11px;letter-spacing:0;text-transform:none;font-family:'Manrope',sans-serif;font-style:italic;margin-left:6px">registra rechazos, revisiones y reenvíos</span>
+          </h4>
+          <div id="submissionsList"></div>
+          <button type="button" class="btn btn-ghost subm-new-btn" id="btnNewSubmission" style="margin-top:10px">+ Registrar nuevo envío a revista</button>
+        </div>
+
         <div class="stage-timeline">
           <h4>Etapa actual y fecha</h4>
           <div class="form-grid">
@@ -1133,6 +1214,17 @@ const STORAGE_PROJECTS = 'projects_v1';
 const STORAGE_CONFERENCES = 'conferences_v1';
 const STORAGE_GOALS = 'goals_v1';
 
+// Tipos de eventos que pueden ocurrir durante un envío a revista
+const SUBMISSION_EVENT_TYPES = [
+  { key: 'minor_revision',  label: 'Minor revision',       color: '#5d7b9c', outcome: null },
+  { key: 'major_revision',  label: 'Major revision',       color: '#7c5fa3', outcome: null },
+  { key: 'rejected_editor', label: 'Rechazado por editor', color: '#8d3f1a', outcome: 'rejected' },
+  { key: 'rejected_peer',   label: 'Rechazado por pares',  color: '#c97a20', outcome: 'rejected' },
+  { key: 'accepted',        label: 'Aceptado',             color: '#3d6e2c', outcome: 'accepted' },
+  { key: 'withdrawn',       label: 'Retirado por autor',   color: '#75798c', outcome: 'withdrawn' }
+];
+function submissionEventInfo(key) { return SUBMISSION_EVENT_TYPES.find(e => e.key === key) || SUBMISSION_EVENT_TYPES[0]; }
+
 let articles = [], projects = [], conferences = [];
 let goals = {}; // { year: { articlesSubmitted, articlesPublished, projectsSubmitted, projectsAwarded, conferencesPresented } }
 let editingArticleId = null, editingProjectId = null, editingConferenceId = null;
@@ -1140,6 +1232,7 @@ let currentTab = 'dashboard';
 let selectedYear = new Date().getFullYear();
 let monthlyEntityFilter = 'all'; // 'all' | 'articles' | 'projects' | 'conferences'
 let timelineRange = 24; // meses por defecto
+let timelineExcludePublished = false;
 let charts = {};
 
 /* =====================================================
@@ -1311,6 +1404,7 @@ async function loadArticles() {
       if (!a.updatedAt) { a.updatedAt = a.createdAt || new Date().toISOString(); migrated = true; }
       if (!a.tags) { a.tags = []; migrated = true; }
       if (!a.citationsByYear) { a.citationsByYear = {}; migrated = true; }
+      if (!a.submissionHistory) { a.submissionHistory = []; migrated = true; }
     });
     if (migrated) await saveArticles();
   } catch (e) { console.error('loadArticles failed:', e); articles = []; }
@@ -1466,6 +1560,14 @@ function setupModals() {
   document.getElementById('a_doi').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); handleDoiLookup(); }
   });
+  document.getElementById('btnNewSubmission').addEventListener('click', () => {
+    if (!editingArticleId) {
+      // For new articles, save first so we have an id
+      showToast('Primero guarda el artículo, luego registra los envíos', true);
+      return;
+    }
+    addNewSubmission(editingArticleId);
+  });
   document.getElementById('a_journal').addEventListener('change', e => {
     const journal = e.target.value.trim();
     if (!journal) return;
@@ -1562,6 +1664,7 @@ function openArticleModal(id) {
   renderArticleTimeline(id);
   renderCitationHistory(id);
   renderCitationsByYearInput(id);
+  renderSubmissionsBlock(id);
   document.getElementById('modalArticle').classList.add('open');
   setTimeout(() => document.getElementById('a_title').focus(), 100);
 }
@@ -1639,6 +1742,7 @@ async function handleSaveArticle() {
       data.createdAt = existing.createdAt;
       data.stageHistory = existing.stageHistory || [];
       data.citationHistory = existing.citationHistory || [];
+      data.submissionHistory = existing.submissionHistory || [];
       const last = data.stageHistory[data.stageHistory.length - 1];
       if (!last || last.stage !== stage) data.stageHistory.push({ stage, date: stageDate });
       else if (last.date !== stageDate) last.date = stageDate;
@@ -1658,6 +1762,7 @@ async function handleSaveArticle() {
     data.createdAt = new Date().toISOString();
     data.stageHistory = [{ stage, date: stageDate }];
     data.citationHistory = citationsValue != null ? [{ date: citationsDate, count: citationsValue }] : [];
+    data.submissionHistory = [];
     articles.push(data);
   }
 
@@ -1935,18 +2040,19 @@ function renderDashboardCards() {
   const confEv = eventsThisYear(conferences);
   const totalEventsYear = artEv + projEv + confEv;
 
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card">
+  const grid = document.getElementById('statsGrid');
+  grid.innerHTML = `
+    <div class="stat-card clickable-hint" data-action="goto-articles" title="Ver todos los artículos">
       <div class="label">Total artículos</div>
       <div class="value">${total}</div>
       <div class="meta">en tu portafolio</div>
     </div>
-    <div class="stat-card sage">
+    <div class="stat-card sage clickable-hint" data-action="goto-articles-by-citations" title="Ver artículos ordenados por citas">
       <div class="label">H-index</div>
       <div class="value">${m.hIndex}</div>
       <div class="meta">H₅ = ${m.h5Index} · últimos 5 años</div>
     </div>
-    <div class="stat-card accent">
+    <div class="stat-card accent clickable-hint" data-action="goto-articles-by-citations" title="Ver artículos ordenados por citas">
       <div class="label">Total de citas</div>
       <div class="value">${m.totalCitations}</div>
       <div class="meta">${m.citedPapers} artículos citados</div>
@@ -1956,17 +2062,37 @@ function renderDashboardCards() {
       <div class="value">${totalEventsYear}</div>
       <div class="meta">${artEv} art · ${projEv} proy · ${confEv} cong</div>
     </div>
-    <div class="stat-card rose">
+    <div class="stat-card rose clickable-hint" data-action="goto-projects" title="Ver proyectos">
       <div class="label">Proyectos</div>
       <div class="value">${projects.length}</div>
       <div class="meta">${projects.filter(p => p.currentStage === 'adjudicado').length} adjudicados</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card clickable-hint" data-action="goto-conferences" title="Ver congresos">
       <div class="label">Congresos</div>
       <div class="value">${conferences.length}</div>
       <div class="meta">${conferences.filter(c => c.currentStage === 'presentado').length} presentados</div>
     </div>
   `;
+
+  // Wire-up click actions
+  grid.querySelectorAll('[data-action]').forEach(card => {
+    card.addEventListener('click', () => {
+      const action = card.dataset.action;
+      if (action === 'goto-articles') {
+        clearProgrammaticFilter();
+        document.querySelector('.tab[data-tab="articles"]').click();
+      } else if (action === 'goto-articles-by-citations') {
+        clearProgrammaticFilter();
+        document.querySelector('.tab[data-tab="articles"]').click();
+        document.getElementById('sortBy').value = 'citations';
+        renderArticles();
+      } else if (action === 'goto-projects') {
+        document.querySelector('.tab[data-tab="projects"]').click();
+      } else if (action === 'goto-conferences') {
+        document.querySelector('.tab[data-tab="conferences"]').click();
+      }
+    });
+  });
 }
 
 function renderStageFunnel() {
@@ -1981,18 +2107,26 @@ function renderStageFunnel() {
   const nonZero = stageData.filter(s => s.count > 0);
   const segments = nonZero.map(s => {
     const pct = (s.count / total) * 100;
-    return `<div class="funnel-seg" style="flex: ${s.count}; background: ${articleStageColor(s.key)}" title="${s.label}: ${s.count} (${pct.toFixed(0)}%)">${pct > 6 ? s.count : ''}</div>`;
+    return `<div class="funnel-seg" style="flex: ${s.count}; background: ${articleStageColor(s.key)}; cursor:pointer" data-stage-filter="${s.key}" data-stage-label="${escapeHtml(s.label)}" title="${s.label}: ${s.count} (${pct.toFixed(0)}%) — clic para filtrar">${pct > 6 ? s.count : ''}</div>`;
   }).join('');
   const groups = STAGE_GROUPS.map(group => {
     const inGroup = stageData.filter(s => s.group === group);
     const groupTotal = inGroup.reduce((s, x) => s + x.count, 0);
-    const chips = inGroup.map(s => `<div class="funnel-chip"><span class="dot" style="background: ${articleStageColor(s.key)}"></span>${s.label}<strong>${s.count}</strong></div>`).join('');
+    const chips = inGroup.map(s => `<div class="funnel-chip" data-stage-filter="${s.key}" data-stage-label="${escapeHtml(s.label)}" title="Clic para ver artículos en ${escapeHtml(s.label)}"><span class="dot" style="background: ${articleStageColor(s.key)}"></span>${s.label}<strong>${s.count}</strong></div>`).join('');
     return `<div class="funnel-group"><div class="funnel-group-head">${group}<span class="gh-count">${groupTotal}</span></div><div class="funnel-chips">${chips}</div></div>`;
   }).join('');
   wrap.innerHTML = `<h3>Distribución de etapas <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-muted);font-weight:500;margin-left:8px">${total} artículos</span></h3>
-    <div class="funnel-sub">Proporción visual y desglose por fase</div>
+    <div class="funnel-sub">Proporción visual y desglose por fase · clic en un chip o segmento para filtrar</div>
     <div class="funnel-bar">${segments}</div>
     <div class="funnel-groups">${groups}</div>`;
+
+  wrap.querySelectorAll('[data-stage-filter]').forEach(el => {
+    el.addEventListener('click', () => {
+      const stageKey = el.dataset.stageFilter;
+      const stageLabel = el.dataset.stageLabel;
+      applyFilterAndNavigate({ type: 'stage', value: stageKey, label: `Etapa: ${stageLabel}` });
+    });
+  });
 }
 
 function renderDashboardChart() {
@@ -2011,7 +2145,7 @@ function renderDashboardChart() {
   })();
   const firstAuthor = articles.filter(a => a.myPosition === 1).length;
   aside.innerHTML = `
-    <div class="overview-metric">
+    <div class="overview-metric clickable-hint" id="metricFirstAuthor" style="cursor:pointer;border-radius:6px;padding:8px;margin:-8px" title="Ver artículos como primer autor">
       <div class="om-label">Como primer autor</div>
       <div class="om-value">${firstAuthor}</div>
       <div class="om-meta">de ${articles.length} artículos</div>
@@ -2021,12 +2155,20 @@ function renderDashboardChart() {
       <div class="om-value">${yearsActive}</div>
       <div class="om-meta">con actividad registrada</div>
     </div>
-    <div class="overview-metric">
+    <div class="overview-metric ${topJournal ? 'clickable-hint' : ''}" ${topJournal ? `id="metricTopJournal" style="cursor:pointer;border-radius:6px;padding:8px;margin:-8px" title="Ver artículos de esta revista"` : ''}>
       <div class="om-label">Revista más frecuente</div>
       <div class="om-value" style="font-size:16px;font-style:italic">${topJournal ? escapeHtml(topJournal[0].slice(0,28)) + (topJournal[0].length > 28 ? '…' : '') : '—'}</div>
       <div class="om-meta">${topJournal ? `${topJournal[1]} artículo(s)` : 'aún sin datos'}</div>
     </div>
   `;
+  const faEl = document.getElementById('metricFirstAuthor');
+  if (faEl && firstAuthor > 0) {
+    faEl.addEventListener('click', () => applyFilterAndNavigate({ type: 'first-author', value: '1', label: 'Como primer autor' }));
+  }
+  const tjEl = document.getElementById('metricTopJournal');
+  if (tjEl && topJournal) {
+    tjEl.addEventListener('click', () => applyFilterAndNavigate({ type: 'journal', value: topJournal[0], label: `Revista: ${topJournal[0]}` }));
+  }
 
   const bubbles = articles.filter(a => {
     const y = getPublicationYear(a) || (a.createdAt ? new Date(a.createdAt).getFullYear() : null);
@@ -2110,16 +2252,31 @@ function setupFilters() {
 }
 
 function renderArticles() {
+  renderActiveFilterBanner();
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
   const stage = document.getElementById('filterStage').value;
   const quartile = document.getElementById('filterQuartile').value;
   const sort = document.getElementById('sortBy').value;
+  const pf = activeProgrammaticFilter;
   let filtered = articles.filter(a => {
     if (stage && a.currentStage !== stage) return false;
     if (quartile && a.quartile !== quartile) return false;
     if (query) {
       const hay = [a.title, a.journal, a.publisher, a.doi, (a.authors||[]).join(' '), (a.tags||[]).join(' '), a.notes].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(query)) return false;
+    }
+    // Filtros programáticos adicionales que no están en el toolbar
+    if (pf) {
+      if (pf.type === 'tag' && !(a.tags || []).some(t => t.toLowerCase() === pf.value.toLowerCase())) return false;
+      if (pf.type === 'journal' && (a.journal || '').toLowerCase() !== pf.value.toLowerCase()) return false;
+      if (pf.type === 'author' && !(a.authors || []).some(au => au.toLowerCase().includes(pf.value.toLowerCase()))) return false;
+      if (pf.type === 'year-published') {
+        const pubEntry = (a.stageHistory || []).find(h => h.stage === 'publicado' && h.date);
+        if (!pubEntry || new Date(pubEntry.date + 'T00:00:00').getFullYear() !== parseInt(pf.value)) return false;
+      }
+      if (pf.type === 'first-author' && pf.value === '1') {
+        if (a.myPosition !== 1) return false;
+      }
     }
     return true;
   });
@@ -2297,6 +2454,10 @@ function renderAllStats() {
   renderMonthlyChart();
   renderYearlyChart();
   renderJournalsChart();
+  renderRejectionJournalsChart();
+  renderEventTypesChart();
+  renderJournalSuccessChart();
+  renderSubmissionsSummary();
   renderTimelineRangeSelector();
   renderStageTimeline();
   renderPhasesChart();
@@ -2316,7 +2477,18 @@ function renderStageChart() {
   charts.stage = new Chart(document.getElementById('chartStage'), {
     type: 'bar',
     data: { labels: ARTICLE_STAGES.map(s => s.label), datasets: [{ data: counts, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } } }
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: () => 'Clic para ver estos artículos' } } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const i = els[0].index;
+        if (counts[i] > 0) {
+          applyFilterAndNavigate({ type: 'stage', value: ARTICLE_STAGES[i].key, label: `Etapa: ${ARTICLE_STAGES[i].label}` });
+        }
+      }
+    }
   });
 }
 
@@ -2329,7 +2501,18 @@ function renderQuartileChart() {
   charts.quartile = new Chart(document.getElementById('chartQuartile'), {
     type: 'doughnut',
     data: { labels: ['Q1','Q2','Q3','Q4', noneCount ? 'Sin definir' : null].filter(Boolean), datasets: [{ data: noneCount ? [...quartileCounts, noneCount] : quartileCounts, backgroundColor: ['#2d5530','#4d7a40','#b8902b','#8a6b3c','#c9c1aa'], borderColor: '#fdfaf3', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } } } }
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: { legend: { position: 'right', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } }, tooltip: { callbacks: { afterLabel: () => 'Clic para ver estos artículos' } } },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const i = els[0].index;
+        const labels = ['Q1','Q2','Q3','Q4'];
+        if (i < 4) {
+          applyFilterAndNavigate({ type: 'quartile', value: labels[i], label: `Cuartil: ${labels[i]}` });
+        }
+      }
+    }
   });
 }
 
@@ -2551,7 +2734,17 @@ function renderJournalsChart() {
   charts.journals = new Chart(document.getElementById('chartJournals'), {
     type: 'bar',
     data: { labels: sorted.map(([k]) => k.length > 22 ? k.slice(0,22) + '…' : k), datasets: [{ data: sorted.map(([_,v]) => v), backgroundColor: '#1f9d68', borderRadius: 6, borderSkipped: false }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } } }
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: () => 'Clic para ver artículos de esta revista' } } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const i = els[0].index;
+        const journalName = sorted[i][0];
+        applyFilterAndNavigate({ type: 'journal', value: journalName, label: `Revista: ${journalName}` });
+      }
+    }
   });
 }
 
@@ -2700,6 +2893,151 @@ function renderCitationsByYearInput(id) {
   table.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateTotal));
 }
 
+/* =====================================================
+   SUBMISSION HISTORY — Render del bloque en el modal de artículo
+   ===================================================== */
+function renderSubmissionsBlock(id) {
+  const section = document.getElementById('submissionsSection');
+  const listWrap = document.getElementById('submissionsList');
+  if (!id) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  const subs = a.submissionHistory || [];
+
+  if (subs.length === 0) {
+    listWrap.innerHTML = `<div class="subm-empty">Sin envíos registrados aún. Pulsa abajo para agregar uno.</div>`;
+  } else {
+    // Mostrar de más reciente a más antiguo
+    const sorted = [...subs].map((s, originalIdx) => ({...s, _idx: originalIdx})).sort((x, y) => (y.submittedDate || '').localeCompare(x.submittedDate || ''));
+    listWrap.innerHTML = sorted.map(s => {
+      const events = s.events || [];
+      const outcomeLabel = {
+        'pending': 'En curso',
+        'rejected': 'Rechazado',
+        'accepted': 'Aceptado',
+        'withdrawn': 'Retirado'
+      }[s.outcome || 'pending'] || 'En curso';
+
+      const eventsHtml = events.length === 0
+        ? '<div class="subm-event" style="font-style:italic;color:var(--ink-muted)">Sin eventos registrados</div>'
+        : events.map((ev, i) => {
+            const info = submissionEventInfo(ev.type);
+            return `<div class="subm-event">
+              <span class="se-dot" style="background:${info.color}"></span>
+              <span class="se-type">${info.label}</span>
+              <span class="se-date">${formatDate(ev.date)}</span>
+              <button type="button" class="se-delete" data-sub-idx="${s._idx}" data-evt-idx="${i}" title="Eliminar evento">×</button>
+            </div>`;
+          }).join('');
+
+      return `<div class="subm-card outcome-${s.outcome || 'pending'}">
+        <div class="subm-card-header">
+          <div>
+            <div class="subm-journal">${escapeHtml(s.journal || 'Sin revista')}</div>
+            <div class="subm-dates">Enviado ${formatDate(s.submittedDate)}${s.closedDate ? ` · Cerrado ${formatDate(s.closedDate)}` : ''}</div>
+          </div>
+          <span class="subm-outcome">${outcomeLabel}</span>
+        </div>
+        <div class="subm-events-list">${eventsHtml}</div>
+        <div class="subm-add-row" data-sub-idx="${s._idx}">
+          <div class="sa-field">
+            <label>Tipo de evento</label>
+            <select class="sa-type">
+              ${SUBMISSION_EVENT_TYPES.map(et => `<option value="${et.key}">${et.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="sa-field">
+            <label>Fecha</label>
+            <input type="date" class="sa-date" value="${todayISO()}">
+          </div>
+          <div class="sa-field">
+            <label>&nbsp;</label>
+            <button type="button" class="btn btn-ghost sa-btn">+ Agregar evento</button>
+          </div>
+          <div class="sa-field">
+            <label>&nbsp;</label>
+            <button type="button" class="btn btn-danger sa-del" title="Eliminar este envío completo">Eliminar envío</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Wire up event additions
+    listWrap.querySelectorAll('.sa-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.subm-add-row');
+        const subIdx = parseInt(row.dataset.subIdx);
+        const type = row.querySelector('.sa-type').value;
+        const date = row.querySelector('.sa-date').value || todayISO();
+        const sub = a.submissionHistory[subIdx];
+        if (!sub.events) sub.events = [];
+        sub.events.push({ type, date });
+        sub.events.sort((x, y) => x.date.localeCompare(y.date));
+        // Update outcome if this event is a terminal one
+        const info = submissionEventInfo(type);
+        if (info.outcome) {
+          sub.outcome = info.outcome;
+          sub.closedDate = date;
+        }
+        renderSubmissionsBlock(id);
+      });
+    });
+
+    listWrap.querySelectorAll('.sa-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.subm-add-row');
+        const subIdx = parseInt(row.dataset.subIdx);
+        if (confirm('¿Eliminar este envío completo y su historial?')) {
+          a.submissionHistory.splice(subIdx, 1);
+          renderSubmissionsBlock(id);
+        }
+      });
+    });
+
+    listWrap.querySelectorAll('.se-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const subIdx = parseInt(btn.dataset.subIdx);
+        const evtIdx = parseInt(btn.dataset.evtIdx);
+        const sub = a.submissionHistory[subIdx];
+        sub.events.splice(evtIdx, 1);
+        // Recalculate outcome based on remaining events
+        sub.outcome = 'pending';
+        sub.closedDate = null;
+        for (const ev of sub.events) {
+          const info = submissionEventInfo(ev.type);
+          if (info.outcome) { sub.outcome = info.outcome; sub.closedDate = ev.date; }
+        }
+        renderSubmissionsBlock(id);
+      });
+    });
+  }
+}
+
+function addNewSubmission(id) {
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  if (!a.submissionHistory) a.submissionHistory = [];
+  // Suggest current journal if there is one
+  const suggestedJournal = a.journal || '';
+  const journal = prompt('¿A qué revista se envió?', suggestedJournal);
+  if (journal === null) return; // cancelled
+  const journalTrim = journal.trim();
+  if (!journalTrim) { showToast('La revista no puede estar vacía', true); return; }
+  const dateStr = prompt('Fecha de envío (AAAA-MM-DD)', todayISO());
+  if (dateStr === null) return;
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim()) ? dateStr.trim() : todayISO();
+
+  a.submissionHistory.push({
+    journal: journalTrim,
+    submittedDate: validDate,
+    events: [],
+    outcome: 'pending',
+    closedDate: null
+  });
+  renderSubmissionsBlock(id);
+}
+
 function renderAlerts() {
   const wrap = document.getElementById('alertsContainer');
   if (!wrap) return;
@@ -2817,14 +3155,20 @@ function renderTopCollaborators() {
   const rows = sorted.map(([name, count], i) => {
     const initials = name.split(/[\s.,]+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const pct = (count / max) * 100;
-    return `<div class="collab-row">
+    return `<div class="collab-row" data-collab-name="${escapeHtml(name)}" style="cursor:pointer" title="Clic para ver trabajos con ${escapeHtml(name)}">
       <div class="collab-avatar" style="background:${palette[i % palette.length]}">${initials || '?'}</div>
       <div class="collab-name">${escapeHtml(name)}</div>
       <div class="collab-bar"><div class="collab-bar-fill" style="width:${pct}%"></div></div>
       <div class="collab-count">${count}</div>
     </div>`;
   }).join('');
-  wrap.innerHTML = `<h3>Co-autores frecuentes</h3><div class="widget-sub">Top ${sorted.length} de tu red</div>${rows}`;
+  wrap.innerHTML = `<h3>Co-autores frecuentes</h3><div class="widget-sub">Top ${sorted.length} de tu red · clic para filtrar</div>${rows}`;
+  wrap.querySelectorAll('[data-collab-name]').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.dataset.collabName;
+      applyFilterAndNavigate({ type: 'author', value: name, label: `Co-autor: ${name}` });
+    });
+  });
 }
 
 function renderGoalsWidget() {
@@ -2912,6 +3256,23 @@ async function handleSaveGoals() {
 }
 
 function renderTimelineRangeSelector() {
+  // Toggle "incluir publicados"
+  const togWrap = document.getElementById('timelineExcludePublished');
+  if (togWrap) {
+    togWrap.innerHTML = `
+      <button class="ef-btn ${!timelineExcludePublished ? 'active' : ''}" data-excl="0">Con publicados</button>
+      <button class="ef-btn ${timelineExcludePublished ? 'active' : ''}" data-excl="1">Sin publicados</button>
+    `;
+    togWrap.querySelectorAll('.ef-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        timelineExcludePublished = b.dataset.excl === '1';
+        if (charts.stageTimeline) charts.stageTimeline.destroy();
+        renderTimelineRangeSelector();
+        renderStageTimeline();
+      });
+    });
+  }
+
   const sel = document.getElementById('timelineRangeSelector');
   if (!sel) return;
   const options = [
@@ -3002,7 +3363,12 @@ function renderStageTimeline() {
   });
 
   // Construir datasets solo para etapas con al menos 1 dato en el rango
-  const datasets = ARTICLE_STAGES.filter(s => counts[s.key].some(v => v > 0)).map(s => ({
+  // Si el toggle "sin publicados" está activo, omitir esa etapa
+  const stagesToShow = ARTICLE_STAGES.filter(s => {
+    if (timelineExcludePublished && s.key === 'publicado') return false;
+    return counts[s.key].some(v => v > 0);
+  });
+  const datasets = stagesToShow.map(s => ({
     label: s.label,
     data: counts[s.key],
     borderColor: articleStageColor(s.key),
@@ -3258,6 +3624,181 @@ function renderPhasesChart() {
   });
 }
 
+/* =====================================================
+   STATS: Análisis de envíos y rechazos
+   ===================================================== */
+function getAllSubmissions() {
+  // Devuelve lista plana de todos los envíos con referencia al artículo
+  const all = [];
+  articles.forEach(a => {
+    (a.submissionHistory || []).forEach(s => {
+      all.push({ article: a, submission: s });
+    });
+  });
+  return all;
+}
+
+function renderRejectionJournalsChart() {
+  const allSubs = getAllSubmissions();
+  // Contar rechazos (editor o pares) por revista
+  const rejections = {};
+  allSubs.forEach(({ submission }) => {
+    if (!submission.journal) return;
+    const hasRej = (submission.events || []).some(e => e.type === 'rejected_editor' || e.type === 'rejected_peer');
+    if (hasRej) {
+      rejections[submission.journal] = (rejections[submission.journal] || 0) + 1;
+    }
+  });
+  const sorted = Object.entries(rejections).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  setEmptyState('chartRejectionJournals', sorted.length === 0);
+  if (sorted.length === 0) return;
+
+  charts.rejectionJournals = new Chart(document.getElementById('chartRejectionJournals'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(([k]) => k.length > 22 ? k.slice(0, 22) + '…' : k),
+      datasets: [{ data: sorted.map(([_, v]) => v), backgroundColor: '#8d3f1a', borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} rechazo(s)`, afterLabel: () => 'Clic para filtrar artículos enviados a esta revista' } } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const i = els[0].index;
+        const journalName = sorted[i][0];
+        applyFilterAndNavigate({ type: 'journal', value: journalName, label: `Revista: ${journalName}` });
+      }
+    }
+  });
+}
+
+function renderEventTypesChart() {
+  const allSubs = getAllSubmissions();
+  const counts = {};
+  SUBMISSION_EVENT_TYPES.forEach(t => { counts[t.key] = 0; });
+  allSubs.forEach(({ submission }) => {
+    (submission.events || []).forEach(ev => {
+      if (counts[ev.type] !== undefined) counts[ev.type]++;
+    });
+  });
+  const data = SUBMISSION_EVENT_TYPES.filter(t => counts[t.key] > 0);
+  setEmptyState('chartEventTypes', data.length === 0);
+  if (data.length === 0) return;
+
+  charts.eventTypes = new Chart(document.getElementById('chartEventTypes'), {
+    type: 'doughnut',
+    data: {
+      labels: data.map(t => `${t.label} (${counts[t.key]})`),
+      datasets: [{
+        data: data.map(t => counts[t.key]),
+        backgroundColor: data.map(t => t.color),
+        borderColor: '#fdfaf3',
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'right', labels: { color: '#3d4256', font: { size: 11 }, padding: 8, usePointStyle: true } },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.parsed} evento(s)` } }
+      }
+    }
+  });
+}
+
+function renderJournalSuccessChart() {
+  const allSubs = getAllSubmissions();
+  // Agrupar por revista: total envíos vs aceptados
+  const stats = {};
+  allSubs.forEach(({ submission }) => {
+    if (!submission.journal) return;
+    if (!stats[submission.journal]) stats[submission.journal] = { total: 0, accepted: 0, rejected: 0 };
+    stats[submission.journal].total++;
+    if (submission.outcome === 'accepted') stats[submission.journal].accepted++;
+    if (submission.outcome === 'rejected') stats[submission.journal].rejected++;
+  });
+  // Solo revistas con al menos 2 envíos para que la "tasa" tenga sentido
+  const filtered = Object.entries(stats).filter(([_, s]) => s.total >= 2);
+  setEmptyState('chartJournalSuccess', filtered.length === 0);
+  if (filtered.length === 0) return;
+
+  const sorted = filtered.sort((a, b) => (b[1].accepted / b[1].total) - (a[1].accepted / a[1].total)).slice(0, 8);
+
+  charts.journalSuccess = new Chart(document.getElementById('chartJournalSuccess'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(([k]) => k.length > 22 ? k.slice(0, 22) + '…' : k),
+      datasets: [
+        { label: 'Aceptados', data: sorted.map(([_, s]) => s.accepted), backgroundColor: '#3d6e2c', borderRadius: 4, borderSkipped: false, stack: 'subs' },
+        { label: 'Rechazados', data: sorted.map(([_, s]) => s.rejected), backgroundColor: '#8d3f1a', borderRadius: 4, borderSkipped: false, stack: 'subs' },
+        { label: 'En curso', data: sorted.map(([_, s]) => s.total - s.accepted - s.rejected), backgroundColor: '#c9c1aa', borderRadius: 4, borderSkipped: false, stack: 'subs' }
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#3d4256', font: { size: 11 }, usePointStyle: true, boxWidth: 8, padding: 8 } },
+        tooltip: { callbacks: { afterLabel: () => '' } }
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } },
+        y: { stacked: true, ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } }
+      },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const i = els[0].index;
+        const journalName = sorted[i][0];
+        applyFilterAndNavigate({ type: 'journal', value: journalName, label: `Revista: ${journalName}` });
+      }
+    }
+  });
+}
+
+function renderSubmissionsSummary() {
+  const wrap = document.getElementById('submissionsSummary');
+  if (!wrap) return;
+  const allSubs = getAllSubmissions();
+
+  // Métricas clave
+  const totalSubmissions = allSubs.length;
+  const totalRejected = allSubs.filter(({submission}) => submission.outcome === 'rejected').length;
+  const totalAccepted = allSubs.filter(({submission}) => submission.outcome === 'accepted').length;
+  const inProgress = allSubs.filter(({submission}) => submission.outcome === 'pending' || !submission.outcome).length;
+
+  const acceptanceRate = (totalAccepted + totalRejected) > 0
+    ? Math.round((totalAccepted / (totalAccepted + totalRejected)) * 100)
+    : null;
+
+  // Artículos sin ningún rechazo
+  const articlesWithSubs = articles.filter(a => (a.submissionHistory || []).length > 0);
+  const articlesNeverRejected = articlesWithSubs.filter(a => {
+    return !(a.submissionHistory || []).some(s => s.outcome === 'rejected');
+  });
+
+  // Artículos con la mayor cantidad de envíos
+  const articleSubCounts = articles.map(a => ({ a, count: (a.submissionHistory || []).length })).filter(x => x.count > 0).sort((x, y) => y.count - x.count);
+  const mostResubmitted = articleSubCounts[0];
+
+  const items = [
+    { label: 'Envíos totales registrados', value: totalSubmissions, meta: 'a lo largo del portafolio' },
+    { label: 'Tasa de aceptación', value: acceptanceRate != null ? `${acceptanceRate}%` : '—', meta: acceptanceRate != null ? `${totalAccepted} de ${totalAccepted + totalRejected} cerrados` : 'sin envíos cerrados' },
+    { label: 'Sin ningún rechazo', value: articlesNeverRejected.length, meta: `de ${articlesWithSubs.length} artículos con envíos` },
+    { label: 'En curso', value: inProgress, meta: 'envíos sin resolución todavía' },
+    { label: 'Artículo más reenviado', value: mostResubmitted ? `${mostResubmitted.count}×` : '—', meta: mostResubmitted ? (mostResubmitted.a.title.slice(0, 38) + (mostResubmitted.a.title.length > 38 ? '…' : '')) : 'sin datos' }
+  ];
+
+  wrap.innerHTML = items.map(it => `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px dashed var(--line-soft);gap:10px">
+      <div>
+        <div style="font-size:13px;color:var(--ink);font-weight:500">${escapeHtml(it.label)}</div>
+        <div style="font-size:11px;color:var(--ink-muted);font-style:italic;font-family:'Fraunces',serif;margin-top:2px">${escapeHtml(String(it.meta))}</div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:var(--ink);text-align:right;white-space:nowrap">${escapeHtml(String(it.value))}</div>
+    </div>
+  `).join('');
+}
+
 function renderTagsChart() {
   const counts = {};
   function tally(entities, weight) {
@@ -3277,8 +3818,14 @@ function renderTagsChart() {
     options: {
       indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} items` } } },
-      scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } }
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} items`, afterLabel: () => 'Clic para filtrar artículos por este tag' } } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }, y: { ticks: { color: '#3d4256', font: { size: 11 } }, grid: { display: false } } },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const i = els[0].index;
+        const tagName = sorted[i][0];
+        applyFilterAndNavigate({ type: 'tag', value: tagName, label: `Área temática: ${tagName}` });
+      }
     }
   });
 }
@@ -4143,6 +4690,57 @@ function closeWelcome() {
     }
   } catch (e) {}
   document.getElementById('modalWelcome').classList.remove('open');
+}
+
+/* =====================================================
+   FILTRO PROGRAMÁTICO — clicks desde gráficos/cards filtran y navegan
+   ===================================================== */
+let activeProgrammaticFilter = null;
+
+function applyFilterAndNavigate(def) {
+  // def: { type: 'stage'|'quartile'|'tag'|'journal'|'author'|'doi'|'year-published', value: string, label: string }
+  activeProgrammaticFilter = def;
+  // Limpiar filtros del toolbar para que no se compongan
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterStage').value = '';
+  document.getElementById('filterQuartile').value = '';
+  // Forzar orden recientes primero
+  document.getElementById('sortBy').value = 'updated';
+
+  // Aplicar al campo correcto del toolbar cuando sea posible (para que el usuario vea coherencia visual)
+  if (def.type === 'stage') document.getElementById('filterStage').value = def.value;
+  if (def.type === 'quartile') document.getElementById('filterQuartile').value = def.value;
+  if (def.type === 'tag' || def.type === 'journal' || def.type === 'author' || def.type === 'doi') {
+    document.getElementById('searchInput').value = def.value;
+  }
+
+  // Cambiar a la pestaña Artículos
+  const tabBtn = document.querySelector('.tab[data-tab="articles"]');
+  if (tabBtn) tabBtn.click();
+  renderArticles();
+  // Scroll arriba para asegurar visibilidad
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearProgrammaticFilter() {
+  activeProgrammaticFilter = null;
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterStage').value = '';
+  document.getElementById('filterQuartile').value = '';
+  renderArticles();
+}
+
+function renderActiveFilterBanner() {
+  const wrap = document.getElementById('activeFilterBanner');
+  if (!wrap) return;
+  if (!activeProgrammaticFilter) { wrap.innerHTML = ''; return; }
+  const def = activeProgrammaticFilter;
+  wrap.innerHTML = `<div class="active-filter-banner">
+    <div class="afb-icon">▼</div>
+    <div class="afb-text">Filtrando por <strong>${escapeHtml(def.label)}</strong> · ordenado por más reciente primero</div>
+    <button id="clearProgFilter">Limpiar filtro</button>
+  </div>`;
+  document.getElementById('clearProgFilter').addEventListener('click', clearProgrammaticFilter);
 }
 
 init();
