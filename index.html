@@ -229,6 +229,12 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 
 /* Dashboard side-by-side widgets */
 .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+.dash-summary-charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+.dash-summary-charts .chart-card { margin: 0; }
+.dash-summary-charts .chart-wrap { height: 240px; }
+@media (max-width: 900px) {
+  .dash-summary-charts { grid-template-columns: 1fr; }
+}
 .widget-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; }
 .widget-card h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 500; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: baseline; }
 .widget-card h3 .head-action { font-size: 11px; font-family: 'Manrope', sans-serif; color: var(--accent); cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -477,6 +483,25 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
     <div class="stats-grid" id="statsGrid"></div>
 
     <div id="alertsContainer"></div>
+
+    <div class="section-title">Resumen visual</div>
+    <div class="dash-summary-charts">
+      <div class="chart-card">
+        <h3>Cuartiles publicados</h3>
+        <div class="chart-sub">Distribución de tus publicaciones</div>
+        <div class="chart-wrap"><canvas id="dashChartQuartile"></canvas><div class="chart-empty">Sin publicaciones aún</div></div>
+      </div>
+      <div class="chart-card">
+        <h3>Resultados de postulaciones</h3>
+        <div class="chart-sub">Cohorte completa de proyectos</div>
+        <div class="chart-wrap"><canvas id="dashChartProjectOutcome"></canvas><div class="chart-empty">Sin postulaciones aún</div></div>
+      </div>
+      <div class="chart-card">
+        <h3>Resultados de ponencias</h3>
+        <div class="chart-sub">Cohorte completa de congresos</div>
+        <div class="chart-wrap"><canvas id="dashChartConferenceOutcome"></canvas><div class="chart-empty">Sin ponencias aún</div></div>
+      </div>
+    </div>
 
     <div class="dash-row">
       <div class="widget-card" id="goalsWidget"></div>
@@ -2011,6 +2036,7 @@ function render() {
   renderStorageBanner();
   renderDashboardCards();
   renderAlerts();
+  renderDashboardSummaryCharts();
   renderGoalsWidget();
   renderTopCollaborators();
   renderStageFunnel();
@@ -2020,6 +2046,13 @@ function render() {
   renderProjects();
   renderConferences();
   if (currentTab === 'stats') renderAllStats();
+}
+
+function renderDashboardSummaryCharts() {
+  // Reutiliza las funciones de estadísticas con canvas IDs propios del dashboard
+  renderQuartileChart('dashChartQuartile', 'dashQuartile');
+  renderProjectOutcomeChart('dashChartProjectOutcome', 'dashProjectOutcome');
+  renderConferenceOutcomeChart('dashChartConferenceOutcome', 'dashConferenceOutcome');
 }
 
 function updateTabCounts() {
@@ -2492,13 +2525,14 @@ function renderStageChart() {
   });
 }
 
-function renderQuartileChart() {
+function renderQuartileChart(canvasId = 'chartQuartile', chartKey = 'quartile') {
   const target = articles.filter(a => ['enviado','revision','respuesta_revisores','aceptado','publicado'].includes(a.currentStage));
-  setEmptyState('chartQuartile', target.length === 0);
+  setEmptyState(canvasId, target.length === 0);
   if (target.length === 0) return;
   const quartileCounts = ['Q1','Q2','Q3','Q4'].map(q => target.filter(a => a.quartile === q).length);
   const noneCount = target.filter(a => !a.quartile).length;
-  charts.quartile = new Chart(document.getElementById('chartQuartile'), {
+  if (charts[chartKey]) charts[chartKey].destroy();
+  charts[chartKey] = new Chart(document.getElementById(canvasId), {
     type: 'doughnut',
     data: { labels: ['Q1','Q2','Q3','Q4', noneCount ? 'Sin definir' : null].filter(Boolean), datasets: [{ data: noneCount ? [...quartileCounts, noneCount] : quartileCounts, backgroundColor: ['#2d5530','#4d7a40','#b8902b','#8a6b3c','#c9c1aa'], borderColor: '#fdfaf3', borderWidth: 3 }] },
     options: {
@@ -2760,15 +2794,16 @@ function renderProjectStageChart() {
   });
 }
 
-function renderProjectOutcomeChart() {
-  // Cohorte completa: todos los proyectos excepto los descartados antes de postular (idea, lectura_bases, fuera_bases)
-  // Mostramos cuatro estados: adjudicado, no adjudicado, en evaluación (enviado), en preparación
+function renderProjectOutcomeChart(canvasId = 'chartProjectOutcome', chartKey = 'projectOutcome') {
+  // Cohorte COMPLETA: cuenta todos los proyectos por su estado actual.
+  // Agrupa las etapas previas al envío (idea, lectura_bases, fuera_bases, preparacion) como "En preparación"
+  // para no perder ninguno y que el total cuadre con la cantidad real de proyectos.
   const adj = projects.filter(p => p.currentStage === 'adjudicado').length;
   const noAdj = projects.filter(p => p.currentStage === 'no_adjudicado').length;
   const enviado = projects.filter(p => p.currentStage === 'enviado').length;
-  const preparacion = projects.filter(p => p.currentStage === 'preparacion').length;
+  const preparacion = projects.filter(p => ['idea','lectura_bases','fuera_bases','preparacion'].includes(p.currentStage)).length;
   const total = adj + noAdj + enviado + preparacion;
-  setEmptyState('chartProjectOutcome', total === 0);
+  setEmptyState(canvasId, total === 0);
   if (total === 0) return;
 
   // Tasa de adjudicación real (solo sobre resueltos)
@@ -2778,14 +2813,16 @@ function renderProjectOutcomeChart() {
     : 'Aún sin proyectos resueltos';
 
   // Construir segmentos solo para los que tienen valor > 0
+  // Colores con fallback explícito por si getCssVar devuelve vacío
   const segments = [
-    { label: 'Adjudicados',    count: adj,         color: projectStageColor('adjudicado'),    stage: 'adjudicado' },
-    { label: 'No adjudicados', count: noAdj,       color: projectStageColor('no_adjudicado'), stage: 'no_adjudicado' },
-    { label: 'En evaluación',  count: enviado,     color: projectStageColor('enviado'),       stage: 'enviado' },
-    { label: 'En preparación', count: preparacion, color: projectStageColor('preparacion'),   stage: 'preparacion' }
+    { label: 'Adjudicados',    count: adj,         color: projectStageColor('adjudicado')    || '#3d6e2c', stage: 'adjudicado' },
+    { label: 'No adjudicados', count: noAdj,       color: projectStageColor('no_adjudicado') || '#8d3f1a', stage: 'no_adjudicado' },
+    { label: 'En evaluación',  count: enviado,     color: projectStageColor('enviado')       || '#b8902b', stage: 'enviado' },
+    { label: 'En preparación', count: preparacion, color: projectStageColor('preparacion')   || '#5d7b9c', stage: 'preparacion' }
   ].filter(s => s.count > 0);
 
-  charts.projectOutcome = new Chart(document.getElementById('chartProjectOutcome'), {
+  if (charts[chartKey]) charts[chartKey].destroy();
+  charts[chartKey] = new Chart(document.getElementById(canvasId), {
     type: 'doughnut',
     data: {
       labels: segments.map(s => `${s.label} (${s.count})`),
@@ -2815,7 +2852,8 @@ function renderProjectOutcomeChart() {
         // Navegar a la pestaña Proyectos y filtrar por esa etapa
         const tabBtn = document.querySelector('.tab[data-tab="projects"]');
         if (tabBtn) tabBtn.click();
-        document.getElementById('filterProjectStage').value = seg.stage;
+        // "En preparación" agrupa varias etapas previas al envío → no forzar filtro que las esconda
+        document.getElementById('filterProjectStage').value = (seg.stage === 'preparacion') ? '' : seg.stage;
         renderProjects();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -2835,15 +2873,15 @@ function renderConferenceStageChart() {
   });
 }
 
-function renderConferenceOutcomeChart() {
-  // Cohorte completa: aceptados/presentados, rechazados, en evaluación (enviados) y en preparación
+function renderConferenceOutcomeChart(canvasId = 'chartConferenceOutcome', chartKey = 'conferenceOutcome') {
+  // Cohorte COMPLETA: agrupa etapas previas (idea, preparacion) como "En preparación"
   const presented = conferences.filter(c => c.currentStage === 'presentado').length;
   const accepted = conferences.filter(c => c.currentStage === 'aceptado').length;
   const rejected = conferences.filter(c => c.currentStage === 'rechazado').length;
   const enviado = conferences.filter(c => c.currentStage === 'enviado').length;
-  const preparacion = conferences.filter(c => c.currentStage === 'preparacion').length;
+  const preparacion = conferences.filter(c => ['idea','preparacion'].includes(c.currentStage)).length;
   const total = presented + accepted + rejected + enviado + preparacion;
-  setEmptyState('chartConferenceOutcome', total === 0);
+  setEmptyState(canvasId, total === 0);
   if (total === 0) return;
 
   // Tasa real (solo sobre los resueltos)
@@ -2854,14 +2892,15 @@ function renderConferenceOutcomeChart() {
     : 'Aún sin congresos resueltos';
 
   const segments = [
-    { label: 'Presentados',    count: presented,   color: conferenceStageColor('presentado'),  stage: 'presentado' },
-    { label: 'Aceptados',      count: accepted,    color: conferenceStageColor('aceptado'),    stage: 'aceptado' },
-    { label: 'Rechazados',     count: rejected,    color: conferenceStageColor('rechazado'),   stage: 'rechazado' },
-    { label: 'En evaluación',  count: enviado,     color: conferenceStageColor('enviado'),     stage: 'enviado' },
-    { label: 'En preparación', count: preparacion, color: conferenceStageColor('preparacion'), stage: 'preparacion' }
+    { label: 'Presentados',    count: presented,   color: conferenceStageColor('presentado')  || '#3d6e2c', stage: 'presentado' },
+    { label: 'Aceptados',      count: accepted,    color: conferenceStageColor('aceptado')     || '#1f9d68', stage: 'aceptado' },
+    { label: 'Rechazados',     count: rejected,    color: conferenceStageColor('rechazado')    || '#8d3f1a', stage: 'rechazado' },
+    { label: 'En evaluación',  count: enviado,     color: conferenceStageColor('enviado')      || '#b8902b', stage: 'enviado' },
+    { label: 'En preparación', count: preparacion, color: conferenceStageColor('preparacion')  || '#5d7b9c', stage: 'preparacion' }
   ].filter(s => s.count > 0);
 
-  charts.conferenceOutcome = new Chart(document.getElementById('chartConferenceOutcome'), {
+  if (charts[chartKey]) charts[chartKey].destroy();
+  charts[chartKey] = new Chart(document.getElementById(canvasId), {
     type: 'doughnut',
     data: {
       labels: segments.map(s => `${s.label} (${s.count})`),
@@ -2889,7 +2928,7 @@ function renderConferenceOutcomeChart() {
         const seg = segments[els[0].index];
         const tabBtn = document.querySelector('.tab[data-tab="conferences"]');
         if (tabBtn) tabBtn.click();
-        document.getElementById('filterConferenceStage').value = seg.stage;
+        document.getElementById('filterConferenceStage').value = (seg.stage === 'preparacion') ? '' : seg.stage;
         renderConferences();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
