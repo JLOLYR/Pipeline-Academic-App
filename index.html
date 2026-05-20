@@ -3459,16 +3459,31 @@ function renderPhasesChart() {
   const acceptToPubDurations = []; // days from 'aceptado' to 'publicado'
   const totalCycleDurations = [];  // days from first to 'publicado' (only published)
 
+  // En-tránsito: artículos actualmente en cada fase y desde cuándo
+  let inPlanningCount = 0;
+  let inReviewCount = 0;
+  let inAcceptedWaitingCount = 0;
+  const acceptedWaitingDays = []; // días que llevan aceptados sin publicar
+
   articles.forEach(a => {
     const start = firstDateAny(a);
     const enviado = firstStageDate(a, 'enviado');
     const aceptado = firstStageDate(a, 'aceptado');
     const publicado = firstStageDate(a, 'publicado');
+    const stage = a.currentStage;
 
     if (start && enviado) planningDurations.push(daysBetween(start, enviado));
     if (enviado && aceptado) reviewDurations.push(daysBetween(enviado, aceptado));
     if (aceptado && publicado) acceptToPubDurations.push(daysBetween(aceptado, publicado));
     if (start && publicado) totalCycleDurations.push(daysBetween(start, publicado));
+
+    // Conteo de "en tránsito" por fase
+    if (!enviado && (a.stageHistory || []).length > 0 && stage !== 'publicado') inPlanningCount++;
+    if (enviado && !aceptado && ['enviado','revision','respuesta_revisores'].includes(stage)) inReviewCount++;
+    if (aceptado && !publicado && stage === 'aceptado') {
+      inAcceptedWaitingCount++;
+      acceptedWaitingDays.push(daysBetween(aceptado, today));
+    }
   });
 
   // Build KPI strip
@@ -3493,18 +3508,53 @@ function renderPhasesChart() {
     const totalPublished = articles.filter(a => a.currentStage === 'publicado').length;
     const totalInProgress = articles.filter(a => a.currentStage !== 'publicado' && (a.stageHistory || []).length > 0).length;
 
+    // Construir meta enriquecido: histórico + en tránsito
+    function buildMeta(historicalCount, historicalText, inTransitCount, inTransitText) {
+      const parts = [];
+      if (historicalCount > 0) parts.push(historicalText);
+      else parts.push('Sin historial');
+      if (inTransitCount > 0) parts.push(`+ ${inTransitCount} en tránsito`);
+      return parts.join(' · ');
+    }
+
+    // Para "Aceptación → publicación" cuando solo hay aceptados sin publicar, mostrar el tiempo de espera
+    let acceptToPubValue, acceptToPubMeta;
+    if (acceptToPubDurations.length > 0) {
+      acceptToPubValue = median(acceptToPubDurations);
+      acceptToPubMeta = buildMeta(acceptToPubDurations.length, `${acceptToPubDurations.length} artículos publicados`, inAcceptedWaitingCount, '');
+    } else if (inAcceptedWaitingCount > 0) {
+      // No hay publicados todavía, pero hay aceptados esperando → mostrar tiempo de espera actual
+      acceptToPubValue = median(acceptedWaitingDays);
+      acceptToPubMeta = `${inAcceptedWaitingCount} aceptado(s) esperando publicación`;
+    } else {
+      acceptToPubValue = null;
+      acceptToPubMeta = 'Ningún artículo aceptado aún';
+    }
+
+    let acceptToPubAvgValue, acceptToPubAvgMeta;
+    if (acceptToPubDurations.length > 0) {
+      acceptToPubAvgValue = avg(acceptToPubDurations);
+      acceptToPubAvgMeta = 'media aritmética simple';
+    } else if (inAcceptedWaitingCount > 0) {
+      acceptToPubAvgValue = avg(acceptedWaitingDays);
+      acceptToPubAvgMeta = 'promedio de espera actual';
+    } else {
+      acceptToPubAvgValue = null;
+      acceptToPubAvgMeta = 'sin datos';
+    }
+
     const kpiHtml = `
-      <div class="phases-kpi-section-title">Promedios históricos · basado en artículos que ya transitaron cada fase</div>
+      <div class="phases-kpi-section-title">Indicadores históricos y en tránsito · todas las fases del pipeline</div>
       <div class="phases-kpi">
-        ${kpiCard('Planeación (mediana)', '#5d7b9c', median(planningDurations), planningDurations.length > 0 ? `${planningDurations.length} artículos llegaron a enviarse` : 'Ningún artículo enviado aún')}
-        ${kpiCard('Revisión (mediana)', '#b8902b', median(reviewDurations), reviewDurations.length > 0 ? `${reviewDurations.length} artículos fueron aceptados` : 'Ningún artículo aceptado aún')}
-        ${kpiCard('Aceptación → publicación', '#3d6e2c', median(acceptToPubDurations), acceptToPubDurations.length > 0 ? `${acceptToPubDurations.length} artículos publicados` : 'Ningún artículo publicado aún')}
-        ${kpiCard('Ciclo completo (mediana)', 'var(--accent)', median(totalCycleDurations), totalCycleDurations.length > 0 ? `${totalCycleDurations.length} artículos · idea → publicación` : 'Sin ciclos completos')}
+        ${kpiCard('Planeación (mediana)', '#5d7b9c', median(planningDurations), buildMeta(planningDurations.length, `${planningDurations.length} ya enviados`, inPlanningCount, ''))}
+        ${kpiCard('Revisión (mediana)', '#b8902b', median(reviewDurations), buildMeta(reviewDurations.length, `${reviewDurations.length} ya aceptados`, inReviewCount, ''))}
+        ${kpiCard('Aceptación → publicación', '#3d6e2c', acceptToPubValue, acceptToPubMeta)}
+        ${kpiCard('Ciclo completo (mediana)', 'var(--accent)', median(totalCycleDurations), totalCycleDurations.length > 0 ? `${totalCycleDurations.length} artículos publicados · idea → publicación` : 'Sin ciclos completos')}
       </div>
       <div class="phases-kpi">
-        ${kpiCard('Planeación (promedio)', '#5d7b9c', avg(planningDurations), 'media aritmética simple')}
-        ${kpiCard('Revisión (promedio)', '#b8902b', avg(reviewDurations), 'media aritmética simple')}
-        ${kpiCard('Aceptación → publicación (promedio)', '#3d6e2c', avg(acceptToPubDurations), 'media aritmética simple')}
+        ${kpiCard('Planeación (promedio)', '#5d7b9c', avg(planningDurations), planningDurations.length > 0 ? 'media aritmética simple' : 'sin datos')}
+        ${kpiCard('Revisión (promedio)', '#b8902b', avg(reviewDurations), reviewDurations.length > 0 ? 'media aritmética simple' : 'sin datos')}
+        ${kpiCard('Aceptación → publicación (promedio)', '#3d6e2c', acceptToPubAvgValue, acceptToPubAvgMeta)}
         <div class="phases-kpi-card" style="--kpi-color:var(--ink)">
           <div class="pk-label">Estado del portafolio</div>
           <div class="pk-value">${totalInProgress}<small>en curso · ${totalPublished} publicados</small></div>
@@ -3554,9 +3604,20 @@ function renderPhasesChart() {
       article: a,
       planningDays, reviewDays, publishDays,
       total: planningDays + reviewDays + publishDays,
-      sortKey
+      sortKey,
+      // Bandera: el artículo existe (tiene historial), aunque su duración total sea 0 días
+      // (caso típico: artículo creado hoy mismo)
+      hasHistory: (a.stageHistory || []).length > 0
     };
-  }).filter(d => d.total > 0);
+  }).filter(d => d.hasHistory); // mostrar todos los que tienen historial, incluso si total = 0
+  // Para los que tienen total = 0, mostrarlos con 1 día simbólico para que la barra sea visible
+  data.forEach(d => {
+    if (d.total === 0 && d.hasHistory) {
+      d.planningDays = 1;
+      d.total = 1;
+      d._isNew = true; // marcar como recién creado para indicación visual
+    }
+  });
 
   data.sort((a, b) => b.sortKey - a.sortKey);
 
@@ -3595,7 +3656,7 @@ function renderPhasesChart() {
               const idx = items[0].dataIndex;
               const d = data[idx];
               const status = articleStageInfo(d.article.currentStage).label;
-              return `Total: ${d.total} días · Estado: ${status}`;
+              return d._isNew ? `Recién creado · Estado: ${status}` : `Total: ${d.total} días · Estado: ${status}`;
             }
           },
           filter: (item) => item.parsed.x > 0
