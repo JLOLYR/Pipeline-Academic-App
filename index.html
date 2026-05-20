@@ -666,9 +666,9 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
         <div class="chart-wrap"><canvas id="chartProjectStage"></canvas><div class="chart-empty">Sin proyectos registrados</div></div>
       </div>
       <div class="chart-card">
-        <h3>Tasa de adjudicación</h3>
-        <div class="chart-sub">Adjudicados vs no adjudicados</div>
-        <div class="chart-wrap"><canvas id="chartProjectOutcome"></canvas><div class="chart-empty">Sin resultados aún</div></div>
+        <h3>Resultados de postulaciones</h3>
+        <div class="chart-sub">Cohorte completa · resueltos y en curso</div>
+        <div class="chart-wrap"><canvas id="chartProjectOutcome"></canvas><div class="chart-empty">Sin postulaciones aún</div></div>
       </div>
     </div>
 
@@ -680,9 +680,9 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
         <div class="chart-wrap"><canvas id="chartConferenceStage"></canvas><div class="chart-empty">Sin congresos registrados</div></div>
       </div>
       <div class="chart-card">
-        <h3>Tasa de aceptación</h3>
-        <div class="chart-sub">Aceptados vs rechazados</div>
-        <div class="chart-wrap"><canvas id="chartConferenceOutcome"></canvas><div class="chart-empty">Sin resultados aún</div></div>
+        <h3>Resultados de ponencias</h3>
+        <div class="chart-sub">Cohorte completa · resueltos y en curso</div>
+        <div class="chart-wrap"><canvas id="chartConferenceOutcome"></canvas><div class="chart-empty">Sin ponencias aún</div></div>
       </div>
     </div>
   </section>
@@ -2761,15 +2761,65 @@ function renderProjectStageChart() {
 }
 
 function renderProjectOutcomeChart() {
+  // Cohorte completa: todos los proyectos excepto los descartados antes de postular (idea, lectura_bases, fuera_bases)
+  // Mostramos cuatro estados: adjudicado, no adjudicado, en evaluación (enviado), en preparación
   const adj = projects.filter(p => p.currentStage === 'adjudicado').length;
   const noAdj = projects.filter(p => p.currentStage === 'no_adjudicado').length;
-  const total = adj + noAdj;
+  const enviado = projects.filter(p => p.currentStage === 'enviado').length;
+  const preparacion = projects.filter(p => p.currentStage === 'preparacion').length;
+  const total = adj + noAdj + enviado + preparacion;
   setEmptyState('chartProjectOutcome', total === 0);
   if (total === 0) return;
+
+  // Tasa de adjudicación real (solo sobre resueltos)
+  const resolved = adj + noAdj;
+  const rateText = resolved > 0
+    ? `Tasa de adjudicación: ${Math.round((adj / resolved) * 100)}% (sobre ${resolved} resueltos)`
+    : 'Aún sin proyectos resueltos';
+
+  // Construir segmentos solo para los que tienen valor > 0
+  const segments = [
+    { label: 'Adjudicados',    count: adj,         color: projectStageColor('adjudicado'),    stage: 'adjudicado' },
+    { label: 'No adjudicados', count: noAdj,       color: projectStageColor('no_adjudicado'), stage: 'no_adjudicado' },
+    { label: 'En evaluación',  count: enviado,     color: projectStageColor('enviado'),       stage: 'enviado' },
+    { label: 'En preparación', count: preparacion, color: projectStageColor('preparacion'),   stage: 'preparacion' }
+  ].filter(s => s.count > 0);
+
   charts.projectOutcome = new Chart(document.getElementById('chartProjectOutcome'), {
     type: 'doughnut',
-    data: { labels: [`Adjudicados (${adj})`, `No adjudicados (${noAdj})`], datasets: [{ data: [adj, noAdj], backgroundColor: [projectStageColor('adjudicado'), projectStageColor('no_adjudicado')], borderColor: '#fdfaf3', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } }, tooltip: { callbacks: { afterLabel: (ctx) => `${((ctx.parsed / total) * 100).toFixed(1)}%` } } } }
+    data: {
+      labels: segments.map(s => `${s.label} (${s.count})`),
+      datasets: [{
+        data: segments.map(s => s.count),
+        backgroundColor: segments.map(s => s.color),
+        borderColor: '#fdfaf3',
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${((ctx.parsed / total) * 100).toFixed(1)}%`,
+            afterLabel: () => 'Clic para filtrar'
+          }
+        },
+        // Plugin de texto central con la tasa real
+        title: { display: true, text: rateText, color: '#3d4256', font: { size: 11, weight: 'normal', style: 'italic', family: "'Fraunces', serif" }, padding: { top: 0, bottom: 14 } }
+      },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const seg = segments[els[0].index];
+        // Navegar a la pestaña Proyectos y filtrar por esa etapa
+        const tabBtn = document.querySelector('.tab[data-tab="projects"]');
+        if (tabBtn) tabBtn.click();
+        document.getElementById('filterProjectStage').value = seg.stage;
+        renderProjects();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
   });
 }
 
@@ -2786,15 +2836,64 @@ function renderConferenceStageChart() {
 }
 
 function renderConferenceOutcomeChart() {
-  const acc = conferences.filter(c => ['aceptado','presentado'].includes(c.currentStage)).length;
-  const rej = conferences.filter(c => c.currentStage === 'rechazado').length;
-  const total = acc + rej;
+  // Cohorte completa: aceptados/presentados, rechazados, en evaluación (enviados) y en preparación
+  const presented = conferences.filter(c => c.currentStage === 'presentado').length;
+  const accepted = conferences.filter(c => c.currentStage === 'aceptado').length;
+  const rejected = conferences.filter(c => c.currentStage === 'rechazado').length;
+  const enviado = conferences.filter(c => c.currentStage === 'enviado').length;
+  const preparacion = conferences.filter(c => c.currentStage === 'preparacion').length;
+  const total = presented + accepted + rejected + enviado + preparacion;
   setEmptyState('chartConferenceOutcome', total === 0);
   if (total === 0) return;
+
+  // Tasa real (solo sobre los resueltos)
+  const positivos = presented + accepted;
+  const resolved = positivos + rejected;
+  const rateText = resolved > 0
+    ? `Tasa de aceptación: ${Math.round((positivos / resolved) * 100)}% (sobre ${resolved} resueltos)`
+    : 'Aún sin congresos resueltos';
+
+  const segments = [
+    { label: 'Presentados',    count: presented,   color: conferenceStageColor('presentado'),  stage: 'presentado' },
+    { label: 'Aceptados',      count: accepted,    color: conferenceStageColor('aceptado'),    stage: 'aceptado' },
+    { label: 'Rechazados',     count: rejected,    color: conferenceStageColor('rechazado'),   stage: 'rechazado' },
+    { label: 'En evaluación',  count: enviado,     color: conferenceStageColor('enviado'),     stage: 'enviado' },
+    { label: 'En preparación', count: preparacion, color: conferenceStageColor('preparacion'), stage: 'preparacion' }
+  ].filter(s => s.count > 0);
+
   charts.conferenceOutcome = new Chart(document.getElementById('chartConferenceOutcome'), {
     type: 'doughnut',
-    data: { labels: [`Aceptados (${acc})`, `Rechazados (${rej})`], datasets: [{ data: [acc, rej], backgroundColor: [conferenceStageColor('aceptado'), conferenceStageColor('rechazado')], borderColor: '#fdfaf3', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } }, tooltip: { callbacks: { afterLabel: (ctx) => `${((ctx.parsed / total) * 100).toFixed(1)}%` } } } }
+    data: {
+      labels: segments.map(s => `${s.label} (${s.count})`),
+      datasets: [{
+        data: segments.map(s => s.count),
+        backgroundColor: segments.map(s => s.color),
+        borderColor: '#fdfaf3',
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${((ctx.parsed / total) * 100).toFixed(1)}%`,
+            afterLabel: () => 'Clic para filtrar'
+          }
+        },
+        title: { display: true, text: rateText, color: '#3d4256', font: { size: 11, weight: 'normal', style: 'italic', family: "'Fraunces', serif" }, padding: { top: 0, bottom: 14 } }
+      },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const seg = segments[els[0].index];
+        const tabBtn = document.querySelector('.tab[data-tab="conferences"]');
+        if (tabBtn) tabBtn.click();
+        document.getElementById('filterConferenceStage').value = seg.stage;
+        renderConferences();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
   });
 }
 
