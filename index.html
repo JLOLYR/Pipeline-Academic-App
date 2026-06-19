@@ -5101,18 +5101,29 @@ let convProfileKey = 'leyrer';
 function calculateFeasibility(conv, profile) {
   let score = 50;
   const factors = [];
+  const reqs = conv.requisitos || {};
 
-  // País elegible
-  const eligibleCountries = conv.eligible_countries || conv.countries || [];
+  // País elegible — el JSON usa pais_region (o eligible_countries en formatos alternos)
+  // Construimos la lista a partir de pais_region (puede ser "Chile / Alemania" para bilaterales) o lista explícita
+  let eligibleCountries = conv.eligible_countries || conv.countries || [];
+  if (eligibleCountries.length === 0 && conv.pais_region) {
+    // Manejar formatos "Chile", "EU", "Chile / Alemania", "LATAM"
+    eligibleCountries = String(conv.pais_region).split(/\s*\/\s*/);
+  }
   if (eligibleCountries.length === 0) {
     score += 5; factors.push('+5 sin restricción de país');
   } else {
-    const match = eligibleCountries.some(c => profile.countries.includes(c) || c === 'Internacional' || c === 'Global');
+    const profileCountries = profile.countries.map(c => c.toLowerCase());
+    const match = eligibleCountries.some(c => {
+      const lc = String(c).toLowerCase();
+      return profileCountries.some(pc => lc.includes(pc) || pc.includes(lc)) ||
+             lc.includes('internacional') || lc.includes('global') || lc.includes('latam');
+    });
     if (match) { score += 15; factors.push('+15 país elegible'); }
     else { score -= 25; factors.push('-25 país no elegible'); }
   }
 
-  // Carrera
+  // Carrera (career_stage en el JSON original; los datos reales no lo traen explícito)
   if (conv.career_stage) {
     if (conv.career_stage === profile.career_stage || conv.career_stage === 'all') {
       score += 10; factors.push('+10 etapa de carrera coincide');
@@ -5122,14 +5133,25 @@ function calculateFeasibility(conv, profile) {
       score -= 15; factors.push('-15 etapa carrera no encaja');
     }
   }
+  // Restricción por años post-doctorado (anios_post_doctorado_max en requisitos)
+  // Si está definida, asumimos que el perfil "early" cumple (≤4 años), "mid" puede no cumplir si ≤5
+  if (reqs.anios_post_doctorado_max != null) {
+    const maxYears = reqs.anios_post_doctorado_max;
+    if (profile.career_stage === 'early' && maxYears >= 4) {
+      score += 5; factors.push('+5 dentro de la ventana postdoctoral');
+    } else if (profile.career_stage === 'mid' && maxYears < 6) {
+      score -= 10; factors.push('-10 fuera de ventana postdoctoral');
+    }
+  }
 
   // Doctorado requerido
-  if (conv.phd_required && !profile.has_phd) {
+  const phdReq = conv.phd_required || (reqs.grado_minimo && String(reqs.grado_minimo).toLowerCase().includes('doctor'));
+  if (phdReq && !profile.has_phd) {
     score -= 30; factors.push('-30 requiere doctorado');
   }
 
-  // Áreas temáticas (keywords)
-  const convKeywords = (conv.keywords || conv.topics || conv.themes || []).map(k => String(k).toLowerCase());
+  // Áreas temáticas (keywords) — el JSON usa area_tematica
+  const convKeywords = (conv.area_tematica || conv.keywords || conv.topics || conv.themes || []).map(k => String(k).toLowerCase());
   if (convKeywords.length > 0) {
     const profKw = profile.keywords.map(k => k.toLowerCase());
     const overlap = convKeywords.filter(k => profKw.some(pk => k.includes(pk) || pk.includes(k))).length;
@@ -5139,7 +5161,8 @@ function calculateFeasibility(conv, profile) {
   }
 
   // Plazo razonable (más de 30 días)
-  const closeStr = conv.closing_date || conv.closes || conv.deadline;
+  const plazos = conv.plazos || {};
+  const closeStr = conv.closing_date || conv.closes || conv.deadline || plazos.fecha_cierre;
   if (closeStr) {
     const close = new Date(closeStr);
     const today = new Date();
@@ -5174,18 +5197,21 @@ function getConvField(conv, candidates, fallback = null) {
 
 function normalizeConvocatoria(raw, profile) {
   // Normaliza una entrada de convocatoria a un objeto consistente
-  const closeStr = getConvField(raw, ['closing_date','closes','deadline','close_date']);
-  const openStr  = getConvField(raw, ['opening_date','opens','open_date']);
+  // Las fechas pueden venir anidadas en raw.plazos.fecha_apertura/fecha_cierre
+  const plazos = raw.plazos || {};
+  const closeStr = getConvField(raw, ['closing_date','closes','deadline','close_date']) || plazos.fecha_cierre || plazos.cierre;
+  const openStr  = getConvField(raw, ['opening_date','opens','open_date']) || plazos.fecha_apertura || plazos.apertura;
   const score = raw.factibilidad != null ? raw.factibilidad : calculateFeasibility(raw, profile).score;
   return {
     raw,
-    id: getConvField(raw, ['id','code'], raw.name || raw.title || ''),
-    title: getConvField(raw, ['name','title','program'], 'Sin título'),
-    country: getConvField(raw, ['country','origin_country'], 'Internacional'),
-    type: getConvField(raw, ['type','category','funding_type'], '—'),
-    amount: getConvField(raw, ['amount','funding','monto']),
-    url: getConvField(raw, ['url','link','website']),
-    summary: getConvField(raw, ['summary','description','desc'], ''),
+    id: getConvField(raw, ['id','code'], raw.titulo || raw.title || raw.name || ''),
+    title: getConvField(raw, ['titulo','name','title','program'], 'Sin título'),
+    country: getConvField(raw, ['pais_region','country','origin_country','pais'], 'Internacional'),
+    type: getConvField(raw, ['tipo','type','category','funding_type'], '—'),
+    amount: getConvField(raw, ['fondos_usd','amount','funding','monto']),
+    url: getConvField(raw, ['url_oficial','url','link','website']),
+    summary: getConvField(raw, ['objetivos','summary','description','desc'], ''),
+    organization: getConvField(raw, ['organizacion','organization','org'], ''),
     openingDate: openStr ? new Date(openStr) : null,
     closingDate: closeStr ? new Date(closeStr) : null,
     closingStr: closeStr,
@@ -5254,7 +5280,12 @@ function filteredConvocatorias() {
 
 function formatConvAmount(v) {
   if (v == null) return '—';
-  if (typeof v === 'number') return v.toLocaleString('es-CL');
+  if (typeof v === 'number') {
+    // Si el campo se llamaba fondos_usd, asumimos USD
+    if (v >= 1000000) return `USD ${(v/1000000).toFixed(1)}M`;
+    if (v >= 1000) return `USD ${(v/1000).toFixed(0)}K`;
+    return `USD ${v.toLocaleString('en-US')}`;
+  }
   return String(v);
 }
 
@@ -5669,6 +5700,7 @@ function renderConvList() {
         <div class="conv-title">${c.url ? `<a href="${escapeHtml(c.url)}" target="_blank">${escapeHtml(c.title)}</a>` : escapeHtml(c.title)}</div>
         <div class="conv-score">${c.score}<small>/100 · ${c.feasibility.label}</small></div>
       </div>
+      ${c.organization ? `<div style="font-size:12px;color:var(--ink-muted);font-style:italic;font-family:'Fraunces',serif;margin-top:2px">${escapeHtml(c.organization)}</div>` : ''}
       <div class="conv-meta-row">
         <span class="conv-chip"><span class="conv-feas-dot"></span>${escapeHtml(c.country)}</span>
         <span class="conv-chip">${escapeHtml(c.type)}</span>
