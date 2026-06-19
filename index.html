@@ -15,6 +15,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <style>
 :root {
   --bg: #f5efe1; --bg-deep: #ebe3d1; --paper: #fdfaf3; --paper-2: #faf5e9;
@@ -235,6 +237,95 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 @media (max-width: 900px) {
   .dash-summary-charts { grid-template-columns: 1fr; }
 }
+
+/* === Convocatorias === */
+.conv-loading { padding: 60px 24px; text-align: center; font-family: 'Fraunces', serif; font-style: italic; color: var(--ink-muted); font-size: 14px; }
+.conv-loading .spinner { width: 28px; height: 28px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 14px; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.conv-error { background: rgba(141,63,26,.05); border: 1px solid rgba(141,63,26,.2); border-left: 3px solid var(--accent-deep); border-radius: var(--radius-md); padding: 18px 22px; margin-bottom: 20px; font-size: 13px; color: var(--ink); }
+.conv-error strong { color: var(--accent-deep); }
+.conv-error code { background: var(--paper-2); padding: 2px 6px; border-radius: 3px; font-size: 11px; font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+
+.conv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.conv-kpi { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 20px; position: relative; }
+.conv-kpi::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 2px; background: var(--kpi-color, var(--ink-muted)); }
+.conv-kpi .ck-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); font-weight: 600; }
+.conv-kpi .ck-value { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 500; line-height: 1.1; margin-top: 4px; color: var(--kpi-color, var(--ink)); }
+.conv-kpi .ck-meta { font-size: 11px; color: var(--ink-muted); margin-top: 3px; font-style: italic; font-family: 'Fraunces', serif; }
+
+.conv-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+@media (max-width: 900px) { .conv-row { grid-template-columns: 1fr; } }
+
+.conv-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
+.conv-toolbar select { font-family: inherit; font-size: 13px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); min-width: 130px; }
+.conv-toolbar .conv-info { font-size: 12px; color: var(--ink-muted); font-style: italic; font-family: 'Fraunces', serif; margin-left: auto; }
+
+.conv-list { display: flex; flex-direction: column; gap: 12px; }
+.conv-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; transition: all 0.15s ease; border-left: 3px solid var(--feas-color, var(--ink-muted)); }
+.conv-card.feas-high { --feas-color: #1f9d68; }
+.conv-card.feas-med  { --feas-color: #b8902b; }
+.conv-card.feas-low  { --feas-color: #8d3f1a; }
+.conv-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.conv-card-header { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 6px; align-items: baseline; flex-wrap: wrap; }
+.conv-title { font-weight: 600; font-size: 15px; color: var(--ink); line-height: 1.3; }
+.conv-title a { color: inherit; text-decoration: none; }
+.conv-title a:hover { color: var(--accent); text-decoration: underline; }
+.conv-score { display: inline-flex; align-items: baseline; gap: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; color: var(--feas-color, var(--ink)); white-space: nowrap; }
+.conv-score small { font-size: 10px; font-weight: 500; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.conv-meta-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--ink-soft); margin-top: 8px; }
+.conv-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 12px; font-size: 11px; color: var(--ink-soft); }
+.conv-chip.conv-deadline { background: rgba(184,144,43,.1); border-color: rgba(184,144,43,.3); color: #8a6b1f; font-weight: 600; }
+.conv-chip.conv-deadline.urgent { background: rgba(141,63,26,.1); border-color: rgba(141,63,26,.3); color: var(--accent-deep); }
+.conv-chip.conv-deadline.closed { background: var(--paper-2); color: var(--ink-muted); text-decoration: line-through; }
+.conv-feas-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--feas-color, var(--ink-muted)); margin-right: 4px; }
+.conv-summary { font-size: 13px; color: var(--ink-soft); line-height: 1.5; margin-top: 8px; font-family: 'Fraunces', serif; font-style: italic; }
+
+.conv-top-table { display: flex; flex-direction: column; gap: 8px; }
+.conv-top-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; background: var(--paper-2); border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s ease; border-left: 2px solid var(--feas-color, var(--ink-muted)); }
+.conv-top-row.feas-high { --feas-color: #1f9d68; }
+.conv-top-row.feas-med  { --feas-color: #b8902b; }
+.conv-top-row.feas-low  { --feas-color: #8d3f1a; }
+.conv-top-row:hover { background: var(--paper); }
+.conv-top-row-title { font-size: 12px; color: var(--ink); font-weight: 500; line-height: 1.35; }
+.conv-top-row-meta { font-size: 10px; color: var(--ink-muted); font-style: italic; font-family: 'Fraunces', serif; margin-top: 2px; }
+.conv-top-row-score { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; color: var(--feas-color, var(--ink)); }
+
+/* Mapa D3 */
+#convMap { width: 100%; height: 340px; position: relative; }
+#convMap svg { width: 100%; height: 100%; }
+.conv-map-country { fill: var(--paper-2); stroke: var(--line); stroke-width: 0.5; transition: fill .15s ease; }
+.conv-map-country.has-data { cursor: pointer; }
+.conv-map-country.has-data:hover { stroke: var(--ink); stroke-width: 1; }
+.conv-map-country.feas-high { fill: #1f9d68; }
+.conv-map-country.feas-med  { fill: #b8902b; }
+.conv-map-country.feas-low  { fill: #8d3f1a; }
+.conv-map-tooltip { position: absolute; background: var(--ink); color: var(--paper); padding: 8px 12px; border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity .15s ease; z-index: 10; white-space: nowrap; box-shadow: var(--shadow-md); }
+.conv-map-tooltip.show { opacity: 1; }
+.conv-map-legend { display: flex; justify-content: center; gap: 16px; padding: 8px 0; font-size: 11px; color: var(--ink-muted); }
+.conv-map-legend .lg-item { display: flex; align-items: center; gap: 6px; }
+.conv-map-legend .lg-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+/* Gantt */
+.conv-gantt { padding: 4px 0; }
+.conv-gantt-header { display: grid; grid-template-columns: 220px 1fr; gap: 8px; align-items: center; padding: 6px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.conv-gantt-row { display: grid; grid-template-columns: 220px 1fr; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line-soft); }
+.conv-gantt-row:last-child { border-bottom: none; }
+.conv-gantt-label { font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.conv-gantt-label:hover { color: var(--accent); }
+.conv-gantt-track { position: relative; height: 18px; background: var(--paper-2); border-radius: 9px; }
+.conv-gantt-bar { position: absolute; top: 3px; bottom: 3px; background: var(--feas-color, var(--ink-muted)); border-radius: 6px; min-width: 4px; }
+.conv-gantt-bar.feas-high { --feas-color: #1f9d68; }
+.conv-gantt-bar.feas-med  { --feas-color: #b8902b; }
+.conv-gantt-bar.feas-low  { --feas-color: #8d3f1a; }
+.conv-gantt-today { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--accent); z-index: 2; }
+.conv-gantt-today::before { content: 'hoy'; position: absolute; top: -14px; left: -10px; font-size: 9px; color: var(--accent); font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+.conv-gantt-scale { display: flex; justify-content: space-between; font-size: 9px; color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; padding: 0 0 4px; }
+
+/* Profile selector */
+.conv-profile-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 16px; background: var(--paper-2); border-radius: var(--radius-md); font-size: 13px; }
+.conv-profile-row label { font-weight: 600; color: var(--ink-soft); font-size: 12px; }
+.conv-profile-row select { font-family: inherit; font-size: 13px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); }
+.conv-profile-row .conv-refresh-btn { margin-left: auto; padding: 6px 12px; font-size: 11px; }
 .widget-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; }
 .widget-card h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 500; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: baseline; }
 .widget-card h3 .head-action { font-size: 11px; font-family: 'Manrope', sans-serif; color: var(--accent); cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -472,6 +563,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
     <button class="tab" data-tab="articles">Artículos <span class="tab-count" id="tcArticles">0</span></button>
     <button class="tab" data-tab="projects">Proyectos <span class="tab-count" id="tcProjects">0</span></button>
     <button class="tab" data-tab="conferences">Congresos <span class="tab-count" id="tcConferences">0</span></button>
+    <button class="tab" data-tab="convocatorias">Convocatorias <span class="tab-count" id="tcConvocatorias">·</span></button>
     <button class="tab" data-tab="stats">Estadísticas</button>
   </nav>
 </header>
@@ -574,6 +666,25 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
       </select>
     </div>
     <div id="conferencesGrid" class="cards-grid"></div>
+  </section>
+
+  <section class="view" id="view-convocatorias">
+    <div class="conv-profile-row">
+      <label>Perfil de factibilidad:</label>
+      <select id="convProfile">
+        <option value="leyrer">Julio Leyrer</option>
+        <option value="colega">Francisco Fernández-Gil</option>
+      </select>
+      <span class="conv-info" id="convStatus" style="margin-left:auto"></span>
+      <button class="btn btn-ghost conv-refresh-btn" id="convRefresh">↻ Recargar</button>
+    </div>
+
+    <div id="convContent">
+      <div class="conv-loading">
+        <div class="spinner"></div>
+        Cargando convocatorias desde GitHub...
+      </div>
+    </div>
   </section>
 
   <section class="view" id="view-stats">
@@ -1239,6 +1350,10 @@ const STORAGE_PROJECTS = 'projects_v1';
 const STORAGE_CONFERENCES = 'conferences_v1';
 const STORAGE_GOALS = 'goals_v1';
 
+// Configuración de la pestaña Convocatorias
+// Cambiar esta URL si mueves el JSON a otro repo o hosting
+const CONVOCATORIAS_JSON_URL = 'https://jlolyr.github.io/convocatorias-internacionales/data/convocatorias.json';
+
 // Tipos de eventos que pueden ocurrir durante un envío a revista
 const SUBMISSION_EVENT_TYPES = [
   { key: 'minor_revision',  label: 'Minor revision',       color: '#5d7b9c', outcome: null },
@@ -1259,6 +1374,12 @@ let monthlyEntityFilter = 'all'; // 'all' | 'articles' | 'projects' | 'conferenc
 let timelineRange = 24; // meses por defecto
 let timelineExcludePublished = false;
 let charts = {};
+
+// Estado de la pestaña Convocatorias
+let convocatorias = [];
+let convocatoriasLoaded = false;
+let convocatoriasError = null;
+let convFilter = { country: '', type: '', feasibility: '', sort: 'closing' };
 
 /* =====================================================
    STORAGE LAYER — wrapper que funciona en cualquier navegador
@@ -1511,6 +1632,7 @@ async function init() {
   setupBulkImport();
   setupPWA();
   setupWelcome();
+  setupConvocatoriasTab();
   populateStageSelectors();
   render();
 }
@@ -1526,12 +1648,15 @@ function setupTabs() {
       updateNewButton();
       if (currentTab === 'stats') renderAllStats();
       if (currentTab === 'dashboard') renderDashboardChart();
+      if (currentTab === 'convocatorias') loadConvocatorias();
     });
   });
 }
 
 function updateNewButton() {
   const btn = document.getElementById('btnNew');
+  if (currentTab === 'convocatorias') { btn.style.display = 'none'; return; }
+  btn.style.display = '';
   if (currentTab === 'projects') btn.textContent = '+ Nuevo proyecto';
   else if (currentTab === 'conferences') btn.textContent = '+ Nuevo congreso';
   else btn.textContent = '+ Nuevo artículo';
@@ -4940,6 +5065,642 @@ function renderActiveFilterBanner() {
     <button id="clearProgFilter">Limpiar filtro</button>
   </div>`;
   document.getElementById('clearProgFilter').addEventListener('click', clearProgrammaticFilter);
+}
+
+/* =====================================================
+   CONVOCATORIAS — pestaña integrada
+   Carga JSON remoto desde GitHub Pages, calcula factibilidad,
+   renderiza KPIs, donut, listado con filtros, mapa D3 y Gantt.
+   ===================================================== */
+
+// Perfil de factibilidad (basado en perfil.json del repo)
+const CONV_PROFILES = {
+  leyrer: {
+    name: 'Julio Leyrer',
+    countries: ['Chile','Internacional','Alemania','UE','EEUU','Japón','Reino Unido'],
+    keywords: ['fluid mechanics','engineering','adhesion','polymers','biomaterials','sustainability','renewable energy','process engineering','materials','biofluids'],
+    career_stage: 'early',
+    has_phd: true,
+    affiliation_country: 'Chile',
+    open_to_mobility: true
+  },
+  colega: {
+    name: 'Francisco Fernández-Gil',
+    countries: ['Chile','Internacional','UE','España','Alemania'],
+    keywords: ['materials science','process engineering','sustainability','industrial engineering'],
+    career_stage: 'mid',
+    has_phd: true,
+    affiliation_country: 'Chile',
+    open_to_mobility: true
+  }
+};
+let convProfileKey = 'leyrer';
+
+// Cálculo de factibilidad (score 0-100)
+// Reimplementa la lógica de factibilidad.js del repo de convocatorias.
+function calculateFeasibility(conv, profile) {
+  let score = 50;
+  const factors = [];
+
+  // País elegible
+  const eligibleCountries = conv.eligible_countries || conv.countries || [];
+  if (eligibleCountries.length === 0) {
+    score += 5; factors.push('+5 sin restricción de país');
+  } else {
+    const match = eligibleCountries.some(c => profile.countries.includes(c) || c === 'Internacional' || c === 'Global');
+    if (match) { score += 15; factors.push('+15 país elegible'); }
+    else { score -= 25; factors.push('-25 país no elegible'); }
+  }
+
+  // Carrera
+  if (conv.career_stage) {
+    if (conv.career_stage === profile.career_stage || conv.career_stage === 'all') {
+      score += 10; factors.push('+10 etapa de carrera coincide');
+    } else if ((profile.career_stage === 'early' && conv.career_stage === 'mid') || (profile.career_stage === 'mid' && conv.career_stage === 'senior')) {
+      score -= 5; factors.push('-5 etapa carrera no ideal');
+    } else {
+      score -= 15; factors.push('-15 etapa carrera no encaja');
+    }
+  }
+
+  // Doctorado requerido
+  if (conv.phd_required && !profile.has_phd) {
+    score -= 30; factors.push('-30 requiere doctorado');
+  }
+
+  // Áreas temáticas (keywords)
+  const convKeywords = (conv.keywords || conv.topics || conv.themes || []).map(k => String(k).toLowerCase());
+  if (convKeywords.length > 0) {
+    const profKw = profile.keywords.map(k => k.toLowerCase());
+    const overlap = convKeywords.filter(k => profKw.some(pk => k.includes(pk) || pk.includes(k))).length;
+    if (overlap >= 2) { score += 15; factors.push(`+15 alta afinidad temática (${overlap} matches)`); }
+    else if (overlap === 1) { score += 8; factors.push('+8 afinidad temática parcial'); }
+    else { score -= 10; factors.push('-10 sin afinidad temática clara'); }
+  }
+
+  // Plazo razonable (más de 30 días)
+  const closeStr = conv.closing_date || conv.closes || conv.deadline;
+  if (closeStr) {
+    const close = new Date(closeStr);
+    const today = new Date();
+    const days = Math.round((close - today) / 86400000);
+    if (days < 0) { score -= 50; factors.push('-50 plazo vencido'); }
+    else if (days < 30) { score -= 10; factors.push('-10 plazo muy corto'); }
+    else if (days > 90) { score += 5; factors.push('+5 plazo cómodo'); }
+  }
+
+  // Movilidad
+  if (conv.requires_mobility && !profile.open_to_mobility) {
+    score -= 15; factors.push('-15 requiere movilidad');
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  return { score, factors };
+}
+
+function feasibilityLevel(score) {
+  if (score >= 70) return { key: 'high', label: 'Alta', color: '#1f9d68' };
+  if (score >= 45) return { key: 'med',  label: 'Media', color: '#b8902b' };
+  return { key: 'low',  label: 'Baja', color: '#8d3f1a' };
+}
+
+function getConvField(conv, candidates, fallback = null) {
+  // Helper: prueba múltiples nombres de campo (el JSON puede usar variantes)
+  for (const c of candidates) {
+    if (conv[c] !== undefined && conv[c] !== null && conv[c] !== '') return conv[c];
+  }
+  return fallback;
+}
+
+function normalizeConvocatoria(raw, profile) {
+  // Normaliza una entrada de convocatoria a un objeto consistente
+  const closeStr = getConvField(raw, ['closing_date','closes','deadline','close_date']);
+  const openStr  = getConvField(raw, ['opening_date','opens','open_date']);
+  const score = raw.factibilidad != null ? raw.factibilidad : calculateFeasibility(raw, profile).score;
+  return {
+    raw,
+    id: getConvField(raw, ['id','code'], raw.name || raw.title || ''),
+    title: getConvField(raw, ['name','title','program'], 'Sin título'),
+    country: getConvField(raw, ['country','origin_country'], 'Internacional'),
+    type: getConvField(raw, ['type','category','funding_type'], '—'),
+    amount: getConvField(raw, ['amount','funding','monto']),
+    url: getConvField(raw, ['url','link','website']),
+    summary: getConvField(raw, ['summary','description','desc'], ''),
+    openingDate: openStr ? new Date(openStr) : null,
+    closingDate: closeStr ? new Date(closeStr) : null,
+    closingStr: closeStr,
+    score,
+    feasibility: feasibilityLevel(score)
+  };
+}
+
+async function loadConvocatorias(force = false) {
+  if (convocatoriasLoaded && !force) { renderConvocatoriasView(); return; }
+  const content = document.getElementById('convContent');
+  const status = document.getElementById('convStatus');
+  if (status) status.textContent = 'Cargando...';
+  convocatoriasError = null;
+  try {
+    const res = await fetch(CONVOCATORIAS_JSON_URL, { cache: force ? 'reload' : 'default' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.convocatorias || data.items || data.data || []);
+    const profile = CONV_PROFILES[convProfileKey];
+    convocatorias = list.map(c => normalizeConvocatoria(c, profile));
+    convocatoriasLoaded = true;
+    updateConvTabCount();
+    if (status) status.textContent = `${convocatorias.length} convocatorias · perfil: ${profile.name}`;
+    renderConvocatoriasView();
+  } catch (err) {
+    convocatoriasError = err.message || String(err);
+    convocatoriasLoaded = false;
+    if (status) status.textContent = 'Error al cargar';
+    content.innerHTML = `<div class="conv-error">
+      <strong>No se pudo cargar el JSON de convocatorias.</strong><br>
+      URL consultada: <code>${escapeHtml(CONVOCATORIAS_JSON_URL)}</code><br>
+      Error: <code>${escapeHtml(convocatoriasError)}</code><br><br>
+      Verifica que el repo <a href="https://github.com/JLOLYR/convocatorias-internacionales" target="_blank">JLOLYR/convocatorias-internacionales</a> tenga GitHub Pages activado en <strong>Settings → Pages → Source: main / root</strong>, y que el archivo <code>data/convocatorias.json</code> exista en la rama main.
+    </div>`;
+  }
+}
+
+function updateConvTabCount() {
+  const el = document.getElementById('tcConvocatorias');
+  if (!el) return;
+  el.textContent = convocatorias.length || '·';
+}
+
+// Filtros aplicados
+function filteredConvocatorias() {
+  let arr = [...convocatorias];
+  if (convFilter.country) arr = arr.filter(c => c.country === convFilter.country);
+  if (convFilter.type) arr = arr.filter(c => c.type === convFilter.type);
+  if (convFilter.feasibility) arr = arr.filter(c => c.feasibility.key === convFilter.feasibility);
+
+  if (convFilter.sort === 'closing') {
+    arr.sort((a,b) => (a.closingDate?.getTime() || Infinity) - (b.closingDate?.getTime() || Infinity));
+  } else if (convFilter.sort === 'score') {
+    arr.sort((a,b) => b.score - a.score);
+  } else if (convFilter.sort === 'amount') {
+    const parseAmount = (v) => {
+      if (v == null) return 0;
+      const m = String(v).replace(/[^\d]/g, '');
+      return m ? parseInt(m) : 0;
+    };
+    arr.sort((a,b) => parseAmount(b.amount) - parseAmount(a.amount));
+  }
+  return arr;
+}
+
+function formatConvAmount(v) {
+  if (v == null) return '—';
+  if (typeof v === 'number') return v.toLocaleString('es-CL');
+  return String(v);
+}
+
+function renderConvocatoriasView() {
+  if (!convocatoriasLoaded) return;
+  const content = document.getElementById('convContent');
+  if (convocatorias.length === 0) {
+    content.innerHTML = `<div class="conv-loading">El JSON cargó pero no hay convocatorias.</div>`;
+    return;
+  }
+
+  // KPIs globales (sin filtro)
+  const total = convocatorias.length;
+  const highCount = convocatorias.filter(c => c.feasibility.key === 'high').length;
+  const today = new Date();
+  const openNow = convocatorias.filter(c => {
+    const openOK = !c.openingDate || c.openingDate <= today;
+    const closeOK = !c.closingDate || c.closingDate >= today;
+    return openOK && closeOK;
+  }).length;
+  const closingSoon = convocatorias.filter(c => {
+    if (!c.closingDate) return false;
+    const days = Math.round((c.closingDate - today) / 86400000);
+    return days >= 0 && days <= 60;
+  }).length;
+  const countries = new Set(convocatorias.map(c => c.country).filter(Boolean)).size;
+
+  // Países y tipos únicos para filtros
+  const uniqueCountries = [...new Set(convocatorias.map(c => c.country).filter(Boolean))].sort();
+  const uniqueTypes = [...new Set(convocatorias.map(c => c.type).filter(Boolean))].sort();
+
+  const filtered = filteredConvocatorias();
+  const top5 = [...convocatorias].sort((a,b) => b.score - a.score).slice(0, 5);
+
+  content.innerHTML = `
+    <div class="conv-kpis">
+      <div class="conv-kpi" style="--kpi-color: var(--accent)">
+        <div class="ck-label">Convocatorias totales</div>
+        <div class="ck-value">${total}</div>
+        <div class="ck-meta">en el repositorio</div>
+      </div>
+      <div class="conv-kpi" style="--kpi-color: #1f9d68">
+        <div class="ck-label">Factibilidad alta</div>
+        <div class="ck-value">${highCount}</div>
+        <div class="ck-meta">score ≥ 70 para tu perfil</div>
+      </div>
+      <div class="conv-kpi" style="--kpi-color: #b8902b">
+        <div class="ck-label">Abiertas ahora</div>
+        <div class="ck-value">${openNow}</div>
+        <div class="ck-meta">aceptando postulaciones</div>
+      </div>
+      <div class="conv-kpi" style="--kpi-color: var(--accent-deep)">
+        <div class="ck-label">Cierran en 60 días</div>
+        <div class="ck-value">${closingSoon}</div>
+        <div class="ck-meta">deadline próximo</div>
+      </div>
+      <div class="conv-kpi" style="--kpi-color: var(--ink)">
+        <div class="ck-label">Países / regiones</div>
+        <div class="ck-value">${countries}</div>
+        <div class="ck-meta">cubiertos</div>
+      </div>
+    </div>
+
+    <div class="conv-row">
+      <div class="chart-card">
+        <h3>Distribución por factibilidad</h3>
+        <div class="chart-sub">3 niveles según tu perfil</div>
+        <div class="chart-wrap"><canvas id="convDonut"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top oportunidades</h3>
+        <div class="chart-sub">5 mejor puntuadas para tu perfil</div>
+        <div class="conv-top-table" id="convTopTable"></div>
+      </div>
+    </div>
+
+    <div class="conv-row">
+      <div class="chart-card">
+        <h3>Distribución geográfica</h3>
+        <div class="chart-sub">Mapa mundi · color = mejor factibilidad por país</div>
+        <div id="convMap"></div>
+        <div class="conv-map-legend">
+          <span class="lg-item"><span class="lg-dot" style="background:#1f9d68"></span>Alta</span>
+          <span class="lg-item"><span class="lg-dot" style="background:#b8902b"></span>Media</span>
+          <span class="lg-item"><span class="lg-dot" style="background:#8d3f1a"></span>Baja</span>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Cierres por mes — próximos 12 meses</h3>
+        <div class="chart-sub">Cuántas convocatorias cierran cada mes</div>
+        <div class="chart-wrap"><canvas id="convTimeline"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:24px">
+      <h3>Línea de tiempo — apertura y cierre</h3>
+      <div class="chart-sub">Gantt horizontal · cada barra es una convocatoria</div>
+      <div class="conv-gantt" id="convGantt"></div>
+    </div>
+
+    <div class="section-title">Listado completo</div>
+    <div class="conv-toolbar">
+      <select id="convFilterCountry">
+        <option value="">Todos los países</option>
+        ${uniqueCountries.map(c => `<option value="${escapeHtml(c)}" ${convFilter.country === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+      </select>
+      <select id="convFilterType">
+        <option value="">Todos los tipos</option>
+        ${uniqueTypes.map(t => `<option value="${escapeHtml(t)}" ${convFilter.type === t ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
+      </select>
+      <select id="convFilterFeas">
+        <option value="">Todas las factibilidades</option>
+        <option value="high" ${convFilter.feasibility === 'high' ? 'selected' : ''}>Alta (≥70)</option>
+        <option value="med" ${convFilter.feasibility === 'med' ? 'selected' : ''}>Media (45-69)</option>
+        <option value="low" ${convFilter.feasibility === 'low' ? 'selected' : ''}>Baja (<45)</option>
+      </select>
+      <select id="convSort">
+        <option value="closing" ${convFilter.sort === 'closing' ? 'selected' : ''}>Por cierre próximo</option>
+        <option value="score" ${convFilter.sort === 'score' ? 'selected' : ''}>Por factibilidad</option>
+        <option value="amount" ${convFilter.sort === 'amount' ? 'selected' : ''}>Por monto</option>
+      </select>
+      <span class="conv-info">${filtered.length} de ${total}</span>
+    </div>
+
+    <div class="conv-list" id="convList"></div>
+  `;
+
+  // Wire filters
+  ['convFilterCountry','convFilterType','convFilterFeas','convSort'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => {
+      convFilter.country = document.getElementById('convFilterCountry').value;
+      convFilter.type = document.getElementById('convFilterType').value;
+      convFilter.feasibility = document.getElementById('convFilterFeas').value;
+      convFilter.sort = document.getElementById('convSort').value;
+      renderConvList();
+    });
+  });
+
+  renderConvDonut();
+  renderConvTimeline();
+  renderConvMap();
+  renderConvGantt();
+  renderConvTopTable(top5);
+  renderConvList();
+}
+
+function renderConvDonut() {
+  const counts = { high: 0, med: 0, low: 0 };
+  convocatorias.forEach(c => counts[c.feasibility.key]++);
+  if (charts.convDonut) charts.convDonut.destroy();
+  charts.convDonut = new Chart(document.getElementById('convDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: [`Alta (${counts.high})`, `Media (${counts.med})`, `Baja (${counts.low})`],
+      datasets: [{ data: [counts.high, counts.med, counts.low], backgroundColor: ['#1f9d68','#b8902b','#8d3f1a'], borderColor: '#fdfaf3', borderWidth: 3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: { legend: { position: 'right', labels: { color: '#3d4256', font: { size: 12 }, padding: 12, usePointStyle: true } } },
+      onClick: (e, els) => {
+        if (els.length === 0) return;
+        const keys = ['high','med','low'];
+        convFilter.feasibility = keys[els[0].index];
+        const sel = document.getElementById('convFilterFeas');
+        if (sel) sel.value = convFilter.feasibility;
+        renderConvList();
+        document.getElementById('convList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+}
+
+function renderConvTimeline() {
+  // Cuenta cuántas convocatorias cierran en cada uno de los próximos 12 meses, segmentado por factibilidad
+  const today = new Date();
+  const months = [];
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth(), label: `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}` });
+  }
+  const buckets = { high: new Array(12).fill(0), med: new Array(12).fill(0), low: new Array(12).fill(0) };
+  convocatorias.forEach(c => {
+    if (!c.closingDate) return;
+    const mi = months.findIndex(m => m.year === c.closingDate.getFullYear() && m.month === c.closingDate.getMonth());
+    if (mi >= 0) buckets[c.feasibility.key][mi]++;
+  });
+  if (charts.convTimeline) charts.convTimeline.destroy();
+  charts.convTimeline = new Chart(document.getElementById('convTimeline'), {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [
+        { label: 'Alta', data: buckets.high, backgroundColor: '#1f9d68', stack: 'a', borderRadius: 4 },
+        { label: 'Media', data: buckets.med, backgroundColor: '#b8902b', stack: 'a', borderRadius: 4 },
+        { label: 'Baja', data: buckets.low, backgroundColor: '#8d3f1a', stack: 'a', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#3d4256', font: { size: 11 }, usePointStyle: true, boxWidth: 8, padding: 8 } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#75798c', font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, color: '#75798c' }, grid: { color: '#ebe3cf' } }
+      }
+    }
+  });
+}
+
+function renderConvTopTable(top5) {
+  const wrap = document.getElementById('convTopTable');
+  if (!wrap) return;
+  wrap.innerHTML = top5.map(c => `
+    <div class="conv-top-row feas-${c.feasibility.key}" data-conv-id="${escapeHtml(String(c.id))}">
+      <div>
+        <div class="conv-top-row-title">${escapeHtml(c.title)}</div>
+        <div class="conv-top-row-meta">${escapeHtml(c.country)} · ${escapeHtml(c.type)}${c.closingStr ? ` · cierra ${formatDate(c.closingStr.slice(0,10))}` : ''}</div>
+      </div>
+      <div class="conv-top-row-score">${c.score}</div>
+    </div>
+  `).join('');
+  // Click → scroll y abrir url
+  wrap.querySelectorAll('[data-conv-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      const conv = convocatorias.find(c => String(c.id) === row.dataset.convId);
+      if (conv && conv.url) window.open(conv.url, '_blank');
+    });
+  });
+}
+
+// Mapa D3 — usa el world atlas TopoJSON cargado vía CDN
+let convMapTopoCache = null;
+async function renderConvMap() {
+  const wrap = document.getElementById('convMap');
+  if (!wrap || typeof d3 === 'undefined' || typeof topojson === 'undefined') {
+    if (wrap) wrap.innerHTML = '<div class="conv-loading">Librería de mapa no disponible.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+
+  // Lookup: nombre de país → mejor factibilidad
+  const byCountry = {};
+  convocatorias.forEach(c => {
+    const name = c.country;
+    if (!name) return;
+    const existing = byCountry[name];
+    if (!existing || c.score > existing.score) byCountry[name] = c;
+  });
+
+  // Cargar topology (cache)
+  try {
+    if (!convMapTopoCache) {
+      const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      convMapTopoCache = await res.json();
+    }
+  } catch (e) {
+    wrap.innerHTML = '<div class="conv-loading">No se pudo cargar el mapa mundi.</div>';
+    return;
+  }
+
+  const width = wrap.clientWidth || 600;
+  const height = 340;
+  const svg = d3.select(wrap).append('svg').attr('viewBox', `0 0 ${width} ${height}`);
+  const tooltip = d3.select(wrap).append('div').attr('class', 'conv-map-tooltip');
+
+  const projection = d3.geoNaturalEarth1().scale(width / 6.5).translate([width / 2, height / 1.8]);
+  const path = d3.geoPath(projection);
+  const countries = topojson.feature(convMapTopoCache, convMapTopoCache.objects.countries).features;
+
+  // Mapeo de nombres entre el JSON de convocatorias y el TopoJSON
+  // Algunos países en el JSON pueden estar en español, el TopoJSON usa inglés
+  const NAME_ALIASES = {
+    'Alemania': ['Germany'],
+    'España': ['Spain'],
+    'EEUU': ['United States of America','United States'],
+    'Estados Unidos': ['United States of America','United States'],
+    'Reino Unido': ['United Kingdom'],
+    'Francia': ['France'],
+    'Japón': ['Japan'],
+    'Chile': ['Chile'],
+    'Brasil': ['Brazil'],
+    'México': ['Mexico'],
+    'Italia': ['Italy'],
+    'Países Bajos': ['Netherlands'],
+    'Suiza': ['Switzerland'],
+    'Suecia': ['Sweden'],
+    'Noruega': ['Norway'],
+    'UE': ['Germany','France','Italy','Spain','Netherlands','Poland','Belgium','Sweden','Austria','Denmark','Finland','Ireland','Portugal','Greece','Czechia','Romania','Hungary','Slovakia','Slovenia','Estonia','Latvia','Lithuania','Croatia','Bulgaria','Luxembourg','Cyprus','Malta'],
+    'Internacional': [], // no se mapea
+    'Global': []
+  };
+
+  function getMatchingCountry(convName) {
+    const aliases = NAME_ALIASES[convName] || [convName];
+    return aliases;
+  }
+
+  // Build map: TopoJSON country name → convocatoria
+  const countryToConv = {};
+  Object.entries(byCountry).forEach(([convName, conv]) => {
+    const aliases = getMatchingCountry(convName);
+    aliases.forEach(a => { if (!countryToConv[a] || conv.score > countryToConv[a].score) countryToConv[a] = conv; });
+  });
+
+  svg.selectAll('path')
+    .data(countries)
+    .enter().append('path')
+    .attr('d', path)
+    .attr('class', d => {
+      const conv = countryToConv[d.properties.name];
+      if (!conv) return 'conv-map-country';
+      return `conv-map-country has-data feas-${conv.feasibility.key}`;
+    })
+    .on('mouseenter', function(event, d) {
+      const conv = countryToConv[d.properties.name];
+      if (!conv) return;
+      tooltip.classed('show', true)
+        .html(`<strong>${d.properties.name}</strong><br>${conv.title}<br>Score: ${conv.score}`);
+    })
+    .on('mousemove', function(event) {
+      const rect = wrap.getBoundingClientRect();
+      tooltip.style('left', (event.clientX - rect.left + 12) + 'px').style('top', (event.clientY - rect.top + 12) + 'px');
+    })
+    .on('mouseleave', function() {
+      tooltip.classed('show', false);
+    })
+    .on('click', function(event, d) {
+      const conv = countryToConv[d.properties.name];
+      if (conv && conv.url) window.open(conv.url, '_blank');
+    });
+}
+
+function renderConvGantt() {
+  const wrap = document.getElementById('convGantt');
+  if (!wrap) return;
+  // Solo convocatorias con fechas
+  const items = convocatorias.filter(c => c.openingDate && c.closingDate).sort((a,b) => a.closingDate - b.closingDate);
+  if (items.length === 0) { wrap.innerHTML = '<div class="conv-loading">Sin fechas de apertura/cierre disponibles.</div>'; return; }
+
+  // Rango: desde la apertura más temprana hasta el cierre más tardío
+  const minDate = new Date(Math.min(...items.map(c => c.openingDate.getTime())));
+  const maxDate = new Date(Math.max(...items.map(c => c.closingDate.getTime())));
+  const rangeMs = maxDate - minDate;
+  const today = new Date();
+  const todayPct = Math.max(0, Math.min(100, ((today - minDate) / rangeMs) * 100));
+
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const fmtMonth = (d) => `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`;
+
+  // Escala visual con 5 marcas
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(p => {
+    const t = new Date(minDate.getTime() + p * rangeMs);
+    return fmtMonth(t);
+  });
+
+  wrap.innerHTML = `
+    <div class="conv-gantt-header">
+      <div></div>
+      <div class="conv-gantt-scale">${ticks.map(t => `<span>${t}</span>`).join('')}</div>
+    </div>
+    ${items.map(c => {
+      const startPct = ((c.openingDate - minDate) / rangeMs) * 100;
+      const widthPct = Math.max(0.5, ((c.closingDate - c.openingDate) / rangeMs) * 100);
+      const title = c.title.length > 32 ? c.title.slice(0, 32) + '…' : c.title;
+      return `<div class="conv-gantt-row">
+        <div class="conv-gantt-label" title="${escapeHtml(c.title)}" data-conv-id="${escapeHtml(String(c.id))}">${escapeHtml(title)}</div>
+        <div class="conv-gantt-track">
+          <div class="conv-gantt-bar feas-${c.feasibility.key}" style="left:${startPct}%; width:${widthPct}%" title="${formatDate(c.openingDate.toISOString().slice(0,10))} → ${formatDate(c.closingDate.toISOString().slice(0,10))}"></div>
+          ${todayPct >= 0 && todayPct <= 100 ? `<div class="conv-gantt-today" style="left:${todayPct}%"></div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+
+  wrap.querySelectorAll('[data-conv-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const conv = convocatorias.find(c => String(c.id) === el.dataset.convId);
+      if (conv && conv.url) window.open(conv.url, '_blank');
+    });
+  });
+}
+
+function renderConvList() {
+  const wrap = document.getElementById('convList');
+  if (!wrap) return;
+  const filtered = filteredConvocatorias();
+  // Update count in toolbar info
+  const info = wrap.parentElement.querySelector('.conv-info');
+  if (info) info.textContent = `${filtered.length} de ${convocatorias.length}`;
+
+  if (filtered.length === 0) {
+    wrap.innerHTML = `<div class="conv-loading">Ninguna convocatoria cumple los filtros aplicados.</div>`;
+    return;
+  }
+
+  const today = new Date();
+  wrap.innerHTML = filtered.map(c => {
+    let deadlineChip = '';
+    if (c.closingDate) {
+      const days = Math.round((c.closingDate - today) / 86400000);
+      const dateStr = formatDate(c.closingDate.toISOString().slice(0,10));
+      if (days < 0) deadlineChip = `<span class="conv-chip conv-deadline closed">Cerrada · ${dateStr}</span>`;
+      else if (days <= 30) deadlineChip = `<span class="conv-chip conv-deadline urgent">⏱ Cierra en ${days}d · ${dateStr}</span>`;
+      else deadlineChip = `<span class="conv-chip conv-deadline">Cierra en ${days}d · ${dateStr}</span>`;
+    }
+    const openChip = c.openingDate && c.openingDate > today
+      ? `<span class="conv-chip">Abre ${formatDate(c.openingDate.toISOString().slice(0,10))}</span>` : '';
+    return `<div class="conv-card feas-${c.feasibility.key}">
+      <div class="conv-card-header">
+        <div class="conv-title">${c.url ? `<a href="${escapeHtml(c.url)}" target="_blank">${escapeHtml(c.title)}</a>` : escapeHtml(c.title)}</div>
+        <div class="conv-score">${c.score}<small>/100 · ${c.feasibility.label}</small></div>
+      </div>
+      <div class="conv-meta-row">
+        <span class="conv-chip"><span class="conv-feas-dot"></span>${escapeHtml(c.country)}</span>
+        <span class="conv-chip">${escapeHtml(c.type)}</span>
+        ${c.amount != null ? `<span class="conv-chip">💰 ${escapeHtml(formatConvAmount(c.amount))}</span>` : ''}
+        ${openChip}
+        ${deadlineChip}
+      </div>
+      ${c.summary ? `<div class="conv-summary">${escapeHtml(c.summary)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function setupConvocatoriasTab() {
+  // Cambio de perfil
+  const profSel = document.getElementById('convProfile');
+  if (profSel) {
+    profSel.value = convProfileKey;
+    profSel.addEventListener('change', () => {
+      convProfileKey = profSel.value;
+      // Recalcular factibilidad para todas
+      const profile = CONV_PROFILES[convProfileKey];
+      convocatorias = convocatorias.map(c => {
+        const score = calculateFeasibility(c.raw, profile).score;
+        return { ...c, score, feasibility: feasibilityLevel(score) };
+      });
+      const status = document.getElementById('convStatus');
+      if (status) status.textContent = `${convocatorias.length} convocatorias · perfil: ${profile.name}`;
+      renderConvocatoriasView();
+    });
+  }
+  const refreshBtn = document.getElementById('convRefresh');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => loadConvocatorias(true));
 }
 
 init();
